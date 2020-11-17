@@ -11,8 +11,8 @@ async fn main() {
 async fn reserve_node() -> Result<(), reqwest::Error> {
 
     let api_url = "https://api.grid5000.fr/3.0/sites/rennes/jobs/?pretty";
-    let username = "batek";
-    let password = "sQ}}JdrHG5ABQXz1";
+    let username = "username";
+    let password = "password";
 
     let mut map = HashMap::new();
     map.insert("resources", "nodes=2,walltime=02:00");
@@ -39,9 +39,12 @@ async fn reserve_node() -> Result<(), reqwest::Error> {
 }
 
 async fn get_grid5000() -> Result<(), reqwest::Error> {
+    let username = "username";
+    let password = "password";
+    
     let client = reqwest::Client::new();
     let res = client.get("https://api.grid5000.fr/3.0/?pretty")
-                    .basic_auth("batek", Some("sQ}}JdrHG5ABQXz1"))
+                    .basic_auth(username, Some(password))
                     .send()
                     .await?;
 
@@ -54,11 +57,14 @@ async fn get_grid5000() -> Result<(), reqwest::Error> {
 
 async fn delete_job(job_to_delete : &str) -> Result<(), reqwest::Error> {
 
+    let username = "username";
+    let password = "password";
+
     let api_url = "https://api.grid5000.fr/3.0/sites/rennes/jobs/";
 
     let client = reqwest::Client::new();
     let res = client.delete(format!("{}{}", api_url, job_to_delete).as_str())
-                    .basic_auth("batek", Some("sQ}}JdrHG5ABQXz1"))
+                    .basic_auth(username, Some(password))
                     .send()
                     .await?;
 
