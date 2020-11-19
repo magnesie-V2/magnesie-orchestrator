@@ -1,4 +1,4 @@
-use super::Cluster::Cluster;
+use crate::Cluster;
 
 pub struct Grid5000;
 
