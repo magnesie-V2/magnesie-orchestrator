@@ -27,8 +27,37 @@ pub struct PhotogrammetryService {
 #[allow(dead_code)]
 impl PhotogrammetryService {
     pub fn new(access_information: ServiceAccessInformation) -> PhotogrammetryService {
-
         PhotogrammetryService { access_information, client: reqwest::blocking::Client::new() }
+    }
+
+    /// Sends a job creating requests and asks for information about it
+    pub fn test(api_host: String){
+        let photogrammetry_access_info = ServiceAccessInformation::new(
+        String::from(api_host),
+        80,
+        String::from(""),
+        String::from(""),
+        );
+        let photogrammetry_service = PhotogrammetryService::new(photogrammetry_access_info);
+
+        let mock_photos = [
+            String::from("photo1.jpeg"),
+            String::from("photo2.jpeg"),
+            String::from("photo3.jpeg")
+        ].to_vec();
+        let photogrammetry_callback = String::from("orchestrator/photogrammetry-callback");
+
+        match photogrammetry_service.create_job(mock_photos, photogrammetry_callback) {
+            Ok(id) => {
+                println!("Created job of id: {}", id);
+
+                match photogrammetry_service.get_job(id) {
+                    Ok(job) => println!("Job of id {} is currently: {}", job.id.unwrap(), job.status.unwrap()),
+                    Err(error) => println!("{}", error)
+                }
+            },
+            Err(error) => println!("{}", error)
+        }
     }
 
     /// Sends pictures urls to the photogrammetry service and returns the id of the created job
@@ -57,6 +86,7 @@ impl PhotogrammetryService {
         }
     }
 
+    /// Retrieves information about a job basd on its id
     pub fn get_job(&self, id: u8) -> Result<PhotogrammetryJob, ServiceError>{
         let request_url = format!("http://{host}:{port}/job/{id}",
                                   host=self.access_information.get_host(),
@@ -92,10 +122,3 @@ impl PhotogrammetryService {
         }
     }
 }
-
-
-
-
-
-
-
