@@ -1,12 +1,20 @@
-pub mod clusters;
+mod services;
 
-use clusters::cluster::*;
-use clusters::grid5000::*;
+use services::service_access_information::*;
+use services::photogrammetry_service::*;
 
-fn main() {
-    let g5k: Grid5000 = Grid5000::new(String::from("https://api.grid5000.fr/3.0/?pretty"));
+#[tokio::main]
+async fn main() {
 
-    let g5kResponse = g5k.has_green_energy_available();
+    let photogrammetry_access_info = ServiceAccessInformation::new(
+        String::from("myUrl"),
+        8080,
+        String::from(""),
+        String::from(""),
+    );
 
-    println!("g5k green energy : {r}", r = g5kResponse);
+    let photogrammetry_service = PhotogrammetryService::new(photogrammetry_access_info);
+
+    photogrammetry_service.print_access_info();
 }
+
