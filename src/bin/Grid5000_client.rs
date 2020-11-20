@@ -1,7 +1,6 @@
 extern crate reqwest;
 extern crate serde;
 
-use std::collections::HashMap;
 use serde::{Serialize, Deserialize};
 use std::env;
 use std::fs;
@@ -37,10 +36,18 @@ struct LinkJob {
 }
 
 #[derive(Serialize, Debug)]
+struct ReservationRequest {
+    name : String,
+    resources : String,
+    command : String,
+    types : Vec<String>,
+}
+
+#[derive(Serialize, Debug)]
 struct DeploymentRequest {
     environment : String,
     nodes : Vec<String>,
-    ssh_key : String
+    key : String
 }
 
 #[allow(unused_must_use)]
@@ -51,13 +58,17 @@ fn main() {
     let password : &str = &args[2];
     let nb_nodes : &str = &args[3];
     let walltime : &str = &args[4];
-    let env = "wheezy-x64-base";
+    let env = "debian10-x64-min";
     let ssh_key_path : &str = &args[5];
     
     let ssh_key : String = get_ssh_key(ssh_key_path).unwrap();
     
     let job_waiting : JobSubmitResponse = reserve_node(username, password, nb_nodes, walltime).unwrap();
-    let job_deployed : JobSubmitResponse = get_reservation(username, password, job_waiting.uid.to_string()).unwrap();
+    let mut job_deployed : JobSubmitResponse = get_reservation(username, password, job_waiting.uid.to_string()).unwrap();
+    while job_deployed.state != "running" {
+        job_deployed = get_reservation(username, password, job_waiting.uid.to_string()).unwrap();
+    }
+
     deploy_env_on_node(username, password, job_deployed.assigned_nodes, env, ssh_key.as_str());
     // delete_job(username, password, job.uid.to_string());
     // get_grid5000(username, password);
@@ -67,15 +78,22 @@ fn reserve_node(username : &str, password : &str, nb_nodes : &str, walltime : &s
 
     let api_url = "https://api.grid5000.fr/3.0/sites/rennes/jobs/?pretty";
 
-    let mut map = HashMap::new();
+    let mut deploy_option : Vec<String> = Vec::new();
+    deploy_option.push("deploy".to_string());
+
     let resource = format!("nodes={},walltime={}", nb_nodes, walltime); 
-    map.insert("resources", resource.as_str());
-    map.insert("command", "sleep 7200");
+
+    let request_body  = ReservationRequest {
+        name : "test_magnes.ie".to_string(),
+        resources : resource,
+        command : "sleep 7200".to_string(),
+        types : deploy_option
+    };
 
     let client = reqwest::blocking::Client::new();
 
     let res = client.post(api_url)
-                                 .json(&map)
+                                 .json(&request_body)
                                  .basic_auth(username, Some(password))
                                  .send()
                                  .expect("Failed to send request");
@@ -93,6 +111,7 @@ fn get_reservation(username : &str, password : &str, job_uid : String) -> Result
     let api_url = "https://api.grid5000.fr/3.0/sites/rennes/jobs/";
 
     let client = reqwest::blocking::Client::new();
+
     let res = client.get(format!("{}{}", api_url, job_uid).as_str())
                     .basic_auth(username, Some(password))
                     .send()
@@ -106,23 +125,23 @@ fn get_reservation(username : &str, password : &str, job_uid : String) -> Result
 }
 
 
-fn deploy_env_on_node(username : &str, password : &str, nodes : Vec<String>, environment : &str, ssh_key : &str) -> Result<(), reqwest::Error>  {
+fn deploy_env_on_node(username : &str, password : &str, target_nodes : Vec<String>, environment : &str, ssh_key : &str) -> Result<(), reqwest::Error>  {
 
     let api_url = "https://api.grid5000.fr/3.0/sites/rennes/deployments";
 
     let request_body  = DeploymentRequest {
-        nodes : nodes,
+        nodes : target_nodes,
         environment : environment.to_string(),
-        ssh_key : ssh_key.to_string()
+        key : ssh_key.to_string()
     };
 
     let client = reqwest::blocking::Client::new();
 
     let res = client.post(api_url)
-                                 .json(&request_body)
-                                 .basic_auth(username, Some(password))
-                                 .send()
-                                 .expect("Failed to send request");
+                                .json(&request_body)
+                                .basic_auth(username, Some(password))
+                                .send()
+                                .expect("Failed to send request");
 
     println!("Status: {}", res.status());
     println!("Headers:\n{:#?}", res.headers());
