@@ -30,7 +30,7 @@ impl PhotogrammetryService {
         PhotogrammetryService { access_information, client: reqwest::blocking::Client::new() }
     }
 
-    /// Sends a job creating requests and asks for information about it
+    /// Sends a job creation requests and asks for information about it
     pub fn test(api_host: String){
         let photogrammetry_access_info = ServiceAccessInformation::new(
         String::from(api_host),
@@ -60,7 +60,7 @@ impl PhotogrammetryService {
         }
     }
 
-    /// Sends pictures urls to the photogrammetry service and returns the id of the created job
+    /// Sends pictures urls to the photogrammetry webservice and returns the id of the created job
     pub fn create_job(&self, pictures_urls: Vec<String>, callback_url: String) -> Result<u8, ServiceError> {
         let request_url = format!("http://{host}:{port}/job",
                                   host=self.access_information.get_host(),
@@ -86,7 +86,7 @@ impl PhotogrammetryService {
         }
     }
 
-    /// Retrieves information about a job basd on its id
+    /// Retrieves information about a job based on its id
     pub fn get_job(&self, id: u8) -> Result<PhotogrammetryJob, ServiceError>{
         let request_url = format!("http://{host}:{port}/job/{id}",
                                   host=self.access_information.get_host(),
@@ -106,7 +106,7 @@ impl PhotogrammetryService {
         Ok(response_body)
     }
 
-    /// Displays information about how to access the web service
+    /// Displays information about how to access the webservice
     pub fn print_access_info(&self){
         println!("host: {}", self.access_information.get_host());
         println!("port: {}", self.access_information.get_port());
