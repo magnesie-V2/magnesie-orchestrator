@@ -1,4 +1,4 @@
-/// Access information to a web service, using basic auth
+/// Access information of a web service, using basic auth
 pub struct ServiceAccessInformation {
     host: String,
     port: u16,
