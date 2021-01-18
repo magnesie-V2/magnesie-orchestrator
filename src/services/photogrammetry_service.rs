@@ -9,12 +9,12 @@ use serde::Serialize;
 
 use super::service_access_information::ServiceAccessInformation;
 use super::service_error::ServiceError;
+use super::services_keeper::ServicesKeeper;
 
 #[derive(Deserialize, Debug)]
 pub struct PhotogrammetryJob {
     pub id: Option<String>,
     pub status: Option<String>,
-    pub result: Option<String>
 }
 
 #[derive(Serialize, Debug)]
@@ -25,17 +25,17 @@ pub struct PhotogrammetryJobRequestBody{
 
 /// Rest client for the photogrammetry service
 pub struct PhotogrammetryService {
-    access_information: ServiceAccessInformation,
+    services_keeper: ServicesKeeper,
     client: Client // it's best to create a client and reuse it for request pooling
 }
 
 #[allow(dead_code)]
 impl PhotogrammetryService {
-    pub fn new(access_information: ServiceAccessInformation) -> Result<Arc<PhotogrammetryService>, ServiceError> {
+    pub fn new(services_keeper: ServicesKeeper) -> Result<Arc<PhotogrammetryService>, ServiceError> {
         let callback_listener = TcpListener::bind("localhost:7878")?;
 
         let service = Arc::new(PhotogrammetryService {
-            access_information,
+            services_keeper,
             client: reqwest::blocking::Client::new()
         });
 
@@ -54,15 +54,15 @@ impl PhotogrammetryService {
     }
 
     /// Sends a job creation requests and asks for information about it
-    pub fn test(photogrammetry_access_info: ServiceAccessInformation) -> Result<bool, ServiceError>{
-        let photogrammetry_service = PhotogrammetryService::new(photogrammetry_access_info)?;
+    pub fn test(services_keeper: ServicesKeeper) -> Result<bool, ServiceError>{
+        let photogrammetry_service = PhotogrammetryService::new(services_keeper)?;
 
         let mock_photos = [
             String::from("photo1.jpeg"),
             String::from("photo2.jpeg"),
             String::from("photo3.jpeg")
         ].to_vec();
-        let photogrammetry_callback = String::from("orchestrator/photogrammetry-callback");
+        let photogrammetry_callback = String::from("http://localhost:7878/photogrammetry/<id>"); // TODO get ip or orchestrator
 
         let id = photogrammetry_service.create_job(mock_photos, photogrammetry_callback)?;
         println!("Created job of id: {}", id);
@@ -75,9 +75,11 @@ impl PhotogrammetryService {
 
     /// Sends pictures urls to the photogrammetry webservice and returns the id of the created job
     pub fn create_job(&self, pictures_urls: Vec<String>, callback_url: String) -> Result<String, ServiceError> {
+        let access_information = self.services_keeper.get_service("photogrammetry")?;
+
         let request_url = format!("http://{host}:{port}/job",
-                                  host=self.access_information.get_host(),
-                                  port=self.access_information.get_port());
+                                  host=access_information.get_host(),
+                                  port=access_information.get_port());
 
         let body = PhotogrammetryJobRequestBody {
             photos: pictures_urls,
@@ -101,9 +103,11 @@ impl PhotogrammetryService {
 
     /// Retrieves information about a job based on its id
     pub fn get_job(&self, id: String) -> Result<PhotogrammetryJob, ServiceError>{
+        let access_information = self.services_keeper.get_service("photogrammetry")?;
+
         let request_url = format!("http://{host}:{port}/job/{id}",
-                                  host=self.access_information.get_host(),
-                                  port=self.access_information.get_port(),
+                                  host=access_information.get_host(),
+                                  port=access_information.get_port(),
                                   id=id);
 
         let request = self.client.get(&request_url);
@@ -119,20 +123,16 @@ impl PhotogrammetryService {
         Ok(response_body)
     }
 
-    /// Displays information about how to access the webservice
-    pub fn print_access_info(&self){
-        println!("host: {}", self.access_information.get_host());
-        println!("port: {}", self.access_information.get_port());
+    /// Retrieves information about a job's result based on its id
+    pub fn get_job_result_url(&self, id: String) -> Result<String, ServiceError>{
+        let access_information = self.services_keeper.get_service("photogrammetry")?;
 
-        let username = self.access_information.get_username();
-        if !username.is_empty() {
-            println!("username: {}", self.access_information.get_username());
-        }
+        let result_url = format!("http://{host}:{port}/res/{id}.tar.gz",
+                                  host=access_information.get_host(),
+                                  port=access_information.get_port(),
+                                  id=id);
 
-        let pwd = self.access_information.get_password();
-        if !pwd.is_empty() {
-            println!("password: *****");
-        }
+        Ok(result_url)
     }
 
     /// TODO Error cases
@@ -197,15 +197,14 @@ impl PhotogrammetryService {
     }
 
     pub fn job_callback (&self, job_id: String) -> Result<(), ServiceError>{
-        let job = self.get_job(job_id)?;
-
-        match job.result {
-            None => {Err(ServiceError::from("This job has no result"))}
-            Some(result) => {
-                // TODO decide what to do with the job result
-                println!("Job result: {}", result);
+        let result_url = self.get_job_result_url(job_id);
+        match result_url {
+            Ok(result_url) => {
+                // TODO decide what to do with the job result's url
+                println!("Job result url: {}", result_url);
                 Ok(())
             }
+            Err(_) => {Err(ServiceError::from("This job has no result"))}
         }
     }
 }
