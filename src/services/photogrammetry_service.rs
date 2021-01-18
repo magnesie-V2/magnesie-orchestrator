@@ -7,7 +7,6 @@ use reqwest::blocking::Client;
 use serde::Deserialize;
 use serde::Serialize;
 
-use super::service_access_information::ServiceAccessInformation;
 use super::service_error::ServiceError;
 use super::services_keeper::ServicesKeeper;
 

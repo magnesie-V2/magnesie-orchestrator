@@ -1,4 +1,6 @@
 /// Access information of a web service, using basic auth
+
+#[allow(dead_code)]
 pub struct ServiceAccessInformation {
     host: String,
     port: u16,
@@ -6,6 +8,7 @@ pub struct ServiceAccessInformation {
     password: String,
 }
 
+#[allow(dead_code)]
 impl ServiceAccessInformation {
     pub fn new (host: String, port: u16, username: String, password: String) -> ServiceAccessInformation{
         ServiceAccessInformation {

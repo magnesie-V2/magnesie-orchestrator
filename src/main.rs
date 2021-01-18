@@ -8,8 +8,8 @@ use services::service_access_information::ServiceAccessInformation;
 fn main() {
     let mut services_keeper = ServicesKeeper::new();
 
-    let mut photogrammetry_access_info = ServiceAccessInformation::new(
-        String::from(String::from("8645cc99-fdca-4a6a-bf45-1eb639a54f2c.mock.pstmn.io")),
+    let photogrammetry_access_info = ServiceAccessInformation::new(
+        String::from(String::from("localhost")), // 8645cc99-fdca-4a6a-bf45-1eb639a54f2c.mock.pstmn.io
         80,
         String::from(""),
         String::from(""),
