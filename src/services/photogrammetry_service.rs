@@ -1,5 +1,5 @@
 use std::net::{TcpListener, TcpStream};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::thread;
 use std::io::{Read, Write};
 
@@ -24,13 +24,13 @@ pub struct PhotogrammetryJobRequestBody{
 
 /// Rest client for the photogrammetry service
 pub struct PhotogrammetryService {
-    services_keeper: ServicesKeeper,
+    services_keeper: Arc<Mutex<ServicesKeeper>>,
     client: Client // it's best to create a client and reuse it for request pooling
 }
 
 #[allow(dead_code)]
 impl PhotogrammetryService {
-    pub fn new(services_keeper: ServicesKeeper) -> Result<Arc<PhotogrammetryService>, ServiceError> {
+    pub fn new(services_keeper: Arc<Mutex<ServicesKeeper>>) -> Result<Arc<PhotogrammetryService>, ServiceError> {
         let callback_listener = TcpListener::bind("0.0.0.0:7878")?;
 
         let service = Arc::new(PhotogrammetryService {
@@ -53,7 +53,7 @@ impl PhotogrammetryService {
     }
 
     /// Sends a job creation requests and asks for information about it
-    pub fn test(services_keeper: ServicesKeeper) -> Result<bool, ServiceError>{
+    pub fn test(services_keeper: Arc<Mutex<ServicesKeeper>>) -> Result<bool, ServiceError>{
         let photogrammetry_service = PhotogrammetryService::new(services_keeper)?;
 
         let mock_photos = [
@@ -74,7 +74,8 @@ impl PhotogrammetryService {
 
     /// Sends pictures urls to the photogrammetry webservice and returns the id of the created job
     pub fn create_job(&self, pictures_urls: Vec<String>, callback_url: String) -> Result<String, ServiceError> {
-        let access_information = self.services_keeper.get_service("photogrammetry")?;
+        let services_keeper = self.services_keeper.lock().unwrap();
+        let access_information = services_keeper.get_service("photogrammetry")?;
 
         let request_url = format!("http://{host}:{port}/job",
                                   host=access_information.get_host(),
@@ -102,7 +103,8 @@ impl PhotogrammetryService {
 
     /// Retrieves information about a job based on its id
     pub fn get_job(&self, id: &str) -> Result<PhotogrammetryJob, ServiceError>{
-        let access_information = self.services_keeper.get_service("photogrammetry")?;
+        let services_keeper = self.services_keeper.lock().unwrap();
+        let access_information = services_keeper.get_service("photogrammetry")?;
 
         let request_url = format!("http://{host}:{port}/job/{id}",
                                   host=access_information.get_host(),
@@ -124,7 +126,8 @@ impl PhotogrammetryService {
 
     /// Retrieves information about a job's result based on its id
     pub fn get_job_result_url(&self, id: &str) -> Result<String, ServiceError>{
-        let access_information = self.services_keeper.get_service("photogrammetry")?;
+        let services_keeper = self.services_keeper.lock().unwrap();
+        let access_information = services_keeper.get_service("photogrammetry")?;
 
         let result_url = format!("http://{host}:{port}/res/{id}.tar.gz",
                                   host=access_information.get_host(),
