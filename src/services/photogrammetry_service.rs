@@ -31,7 +31,7 @@ pub struct PhotogrammetryService {
 #[allow(dead_code)]
 impl PhotogrammetryService {
     pub fn new(services_keeper: ServicesKeeper) -> Result<Arc<PhotogrammetryService>, ServiceError> {
-        let callback_listener = TcpListener::bind("localhost:7878")?;
+        let callback_listener = TcpListener::bind("0.0.0.0:7878")?;
 
         let service = Arc::new(PhotogrammetryService {
             services_keeper,
@@ -61,12 +61,12 @@ impl PhotogrammetryService {
             String::from("photo2.jpeg"),
             String::from("photo3.jpeg")
         ].to_vec();
-        let photogrammetry_callback = String::from("http://localhost:7878/photogrammetry/<id>"); // TODO get ip or orchestrator
+        let photogrammetry_callback = String::from("/photogrammetry/<id>"); // TODO get ip or orchestrator
 
         let id = photogrammetry_service.create_job(mock_photos, photogrammetry_callback)?;
         println!("Created job of id: {}", id);
 
-        let job = photogrammetry_service.get_job(id)?;
+        let job = photogrammetry_service.get_job(id.as_str())?;
         println!("Job of id {} is currently: {}", job.id.unwrap(), job.status.unwrap());
 
         Ok(true) // No error thrown so the test returns true
@@ -101,7 +101,7 @@ impl PhotogrammetryService {
     }
 
     /// Retrieves information about a job based on its id
-    pub fn get_job(&self, id: String) -> Result<PhotogrammetryJob, ServiceError>{
+    pub fn get_job(&self, id: &str) -> Result<PhotogrammetryJob, ServiceError>{
         let access_information = self.services_keeper.get_service("photogrammetry")?;
 
         let request_url = format!("http://{host}:{port}/job/{id}",
@@ -115,7 +115,7 @@ impl PhotogrammetryService {
         let mut response_body: PhotogrammetryJob = response.json()?;
 
         match response_body.id {
-            None => response_body.id = Some(id),
+            None => response_body.id = Some(String::from(id)),
             _ => {}
         }
 
@@ -123,7 +123,7 @@ impl PhotogrammetryService {
     }
 
     /// Retrieves information about a job's result based on its id
-    pub fn get_job_result_url(&self, id: String) -> Result<String, ServiceError>{
+    pub fn get_job_result_url(&self, id: &str) -> Result<String, ServiceError>{
         let access_information = self.services_keeper.get_service("photogrammetry")?;
 
         let result_url = format!("http://{host}:{port}/res/{id}.tar.gz",
@@ -137,6 +137,9 @@ impl PhotogrammetryService {
     /// TODO Error cases
     pub fn handle_connection (&self, mut stream: TcpStream) -> Result<(), ServiceError> {
         let mut buffer = [0; 1024];
+        let response_status_line;
+        let response_body;
+
         stream.read(&mut buffer).unwrap();
 
         let buffer_as_string = String::from(std::str::from_utf8(&buffer)?);
@@ -155,28 +158,32 @@ impl PhotogrammetryService {
 
         let mut path_terms = path.split("/");
         match path_terms.next() {
-            Some(x) => x,
-            None => unimplemented!(),
+            Some(_) => {},
+            None => println!("Bad request: [{}] {}", method, path),
         };
         match path_terms.next() {
-            Some(x) => x,
-            None => unimplemented!(),
+            Some(_) => {},
+            None => println!("Bad request: [{}] {}", method, path),
         };
 
-        let id = String::from(match path_terms.next() {
+        let mut id = String::from(match path_terms.next() {
             Some(x) => x,
             None => "undefined",
         });
 
-        let response_status_line;
-        let response_body;
+        match self.get_job(&id){
+            Ok(_) => {}
+            Err(_) => {
+                id = String::from("undefined")
+            }
+        };
 
         if id == "undefined" {
             response_status_line = "HTTP/1.1 404 NOT FOUND\r\n\r\n";
             response_body = "404";
         }
         else {
-            self.job_callback(id)?;
+            self.job_callback(id.as_str())?;
 
             if method == "GET" {
                 response_status_line = "HTTP/1.1 200 OK\r\n\r\n";
@@ -195,7 +202,7 @@ impl PhotogrammetryService {
         Ok(())
     }
 
-    pub fn job_callback (&self, job_id: String) -> Result<(), ServiceError>{
+    pub fn job_callback (&self, job_id: &str) -> Result<(), ServiceError>{
         let result_url = self.get_job_result_url(job_id);
         match result_url {
             Ok(result_url) => {

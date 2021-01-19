@@ -21,7 +21,6 @@ fn main() {
         Ok(_) => {}
         Err(error) => println!("{}", error)
     }
-
     /*photogrammetry_access_info = ServiceAccessInformation::new(
         String::from(String::from("fake-address")),
         80,
