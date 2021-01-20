@@ -14,7 +14,7 @@
     docker run \
     --rm \
     --name=magnesie-orchestrator \
-    -i -t -d \
+    -i -t [-d] \
     -p 7878:7878 \
     magnesie-orchestrator
 ```
