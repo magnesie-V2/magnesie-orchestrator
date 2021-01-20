@@ -9,6 +9,7 @@ use serde::Serialize;
 
 use super::service_error::ServiceError;
 use super::services_keeper::ServicesKeeper;
+// use crate::services::service_access_information::ServiceAccessInformation;
 
 #[derive(Deserialize, Debug)]
 pub struct PhotogrammetryJob {
@@ -53,9 +54,7 @@ impl PhotogrammetryService {
     }
 
     /// Sends a job creation requests and asks for information about it
-    pub fn test(services_keeper: Arc<RwLock<ServicesKeeper>>) -> Result<bool, ServiceError>{
-        let photogrammetry_service = PhotogrammetryService::new(services_keeper)?;
-
+    pub fn test(&self) -> Result<bool, ServiceError>{
         let mock_photos = [
             String::from("photo1.jpeg"),
             String::from("photo2.jpeg"),
@@ -63,10 +62,10 @@ impl PhotogrammetryService {
         ].to_vec();
         let photogrammetry_callback = String::from("/photogrammetry/<id>"); // TODO get ip or orchestrator
 
-        let id = photogrammetry_service.create_job(mock_photos, photogrammetry_callback)?;
+        let id = self.create_job(mock_photos, photogrammetry_callback)?;
         println!("Created job of id: {}", id);
 
-        let job = photogrammetry_service.get_job(id.as_str())?;
+        let job = self.get_job(id.as_str())?;
         println!("Job of id {} is currently: {}", job.id.unwrap(), job.status.unwrap());
 
         Ok(true) // No error thrown so the test returns true
@@ -75,7 +74,16 @@ impl PhotogrammetryService {
     /// Sends pictures urls to the photogrammetry webservice and returns the id of the created job
     pub fn create_job(&self, pictures_urls: Vec<String>, callback_url: String) -> Result<String, ServiceError> {
         let services_keeper = self.services_keeper.read().unwrap();
-        let access_information = services_keeper.get_service("photogrammetry")?;
+        let access_information;
+
+        match services_keeper.get_service("photogrammetry"){
+            None => {
+                return Err(ServiceError::from("No photogrammetry service available"));
+            },
+            Some(ai) => {
+                access_information = ai;
+            }
+        }
 
         let request_url = format!("http://{host}:{port}/job",
                                   host=access_information.get_host(),
@@ -104,7 +112,16 @@ impl PhotogrammetryService {
     /// Retrieves information about a job based on its id
     pub fn get_job(&self, id: &str) -> Result<PhotogrammetryJob, ServiceError>{
         let services_keeper = self.services_keeper.read().unwrap();
-        let access_information = services_keeper.get_service("photogrammetry")?;
+        let access_information;
+
+        match services_keeper.get_service("photogrammetry"){
+            None => {
+                return Err(ServiceError::from("No photogrammetry service available"));
+            },
+            Some(ai) => {
+                access_information = ai;
+            }
+        }
 
         let request_url = format!("http://{host}:{port}/job/{id}",
                                   host=access_information.get_host(),
@@ -127,7 +144,16 @@ impl PhotogrammetryService {
     /// Retrieves information about a job's result based on its id
     pub fn get_job_result_url(&self, id: &str) -> Result<String, ServiceError>{
         let services_keeper = self.services_keeper.read().unwrap();
-        let access_information = services_keeper.get_service("photogrammetry")?;
+        let access_information;
+
+        match services_keeper.get_service("photogrammetry"){
+            None => {
+                return Err(ServiceError::from("No photogrammetry service available"));
+            },
+            Some(ai) => {
+                access_information = ai;
+            }
+        }
 
         let result_url = format!("http://{host}:{port}/res/{id}.tar.gz",
                                   host=access_information.get_host(),

@@ -16,14 +16,25 @@ fn main() {
         String::from(""),
         String::from(""),
     );
-    // let photogrammetry_service = PhotogrammetryService::new(services_keeper.clone());
 
-    services_keeper.write().unwrap().register_service("photogrammetry", photogrammetry_access_info);
+    match PhotogrammetryService::new(services_keeper.clone()) {
+        Ok(service) => {
+            match service.test() {
+                Ok(_) => {}
+                Err(error) => println!("{}", error)
+            }
 
-    match PhotogrammetryService::test(services_keeper.clone()) {
-        Ok(_) => {}
-        Err(error) => println!("{}", error)
-    }
+            println!("Setting the spg info");
+            services_keeper.write().unwrap().register_service("photogrammetry", photogrammetry_access_info);
+            println!("spg info set");
+
+            match service.test() {
+                Ok(_) => {}
+                Err(error) => println!("{}", error)
+            }
+        },
+        Err(_) => unimplemented!(),
+    };
 
     loop{} // preventing the app to terminate to avoid having to join services threads with the main thread
 }
