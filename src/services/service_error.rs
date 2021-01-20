@@ -25,11 +25,6 @@ impl From<reqwest::Error> for ServiceError {
     }
 }
 
-impl From<String> for ServiceError {
-    fn from(error_message: String) -> Self {
-        ServiceError::BasicError(error_message)
-    }
-}
 
 impl From<&str> for ServiceError {
     fn from(error_message: &str) -> Self {
