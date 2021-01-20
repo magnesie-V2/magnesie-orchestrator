@@ -8,8 +8,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use super::service_error::ServiceError;
-use super::services_keeper::ServicesKeeper;
-// use crate::services::service_access_information::ServiceAccessInformation;
+use super::remote::{ServicesKeeper, ServiceAccessInformation};
 
 #[derive(Deserialize, Debug)]
 pub struct PhotogrammetryJob {
@@ -32,8 +31,6 @@ pub struct PhotogrammetryService {
 #[allow(dead_code)]
 impl PhotogrammetryService {
     pub fn new(services_keeper: Arc<RwLock<ServicesKeeper>>) -> Result<Arc<PhotogrammetryService>, ServiceError> {
-        let callback_listener = TcpListener::bind("0.0.0.0:7878")?;
-
         let service = Arc::new(PhotogrammetryService {
             services_keeper,
             client: reqwest::blocking::Client::new()
@@ -41,6 +38,7 @@ impl PhotogrammetryService {
 
         let service_clone = service.clone();
         thread::spawn(move || -> Result<String,ServiceError> {
+            let callback_listener = TcpListener::bind("0.0.0.0:7878")?;
             for stream in callback_listener.incoming() {
                 match service_clone.handle_connection(stream?) {
                     Ok(_) => {}
@@ -56,13 +54,13 @@ impl PhotogrammetryService {
     /// Sends a job creation requests and asks for information about it
     pub fn test(&self) -> Result<bool, ServiceError>{
         let mock_photos = [
-            String::from("photo1.jpeg"),
-            String::from("photo2.jpeg"),
-            String::from("photo3.jpeg")
+            "photo1.jpeg",
+            "photo2.jpeg",
+            "photo3.jpeg"
         ].to_vec();
-        let photogrammetry_callback = String::from("/photogrammetry/<id>"); // TODO get ip or orchestrator
+        let photogrammetry_callback = "/photogrammetry/<id>";
 
-        let id = self.create_job(mock_photos, photogrammetry_callback)?;
+        let id = self.create_job(&mock_photos, photogrammetry_callback)?;
         println!("Created job of id: {}", id);
 
         let job = self.get_job(id.as_str())?;
@@ -71,57 +69,48 @@ impl PhotogrammetryService {
         Ok(true) // No error thrown so the test returns true
     }
 
-    /// Sends pictures urls to the photogrammetry webservice and returns the id of the created job
-    pub fn create_job(&self, pictures_urls: Vec<String>, callback_url: String) -> Result<String, ServiceError> {
+    pub fn get_access_information(&self) -> Result<ServiceAccessInformation, ServiceError>{
         let services_keeper = self.services_keeper.read().unwrap();
-        let access_information;
+        let sai = services_keeper.get_service("photogrammetry");
 
-        match services_keeper.get_service("photogrammetry"){
-            None => {
-                return Err(ServiceError::from("No photogrammetry service available"));
-            },
-            Some(ai) => {
-                access_information = ai;
-            }
+        match sai{
+            Some(sai) => Ok(ServiceAccessInformation::new(
+                sai.get_host(),
+                sai.get_port().clone(),
+                sai.get_username(),
+                sai.get_password()
+            )),
+            _ => Err(ServiceError::from("No photogrammetry service available"))
         }
+    }
+
+    /// Sends pictures urls to the photogrammetry webservice and returns the id of the created job
+    pub fn create_job(&self, pictures_urls: &[&str], callback_url: &str) -> Result<String, ServiceError> {
+        let access_information = self.get_access_information()?;
 
         let request_url = format!("http://{host}:{port}/job",
                                   host=access_information.get_host(),
                                   port=access_information.get_port());
 
         let body = PhotogrammetryJobRequestBody {
-            photos: pictures_urls,
-            callback: callback_url
+            photos: pictures_urls.to_vec().iter().map(|s| s.to_string()).collect(),
+            callback: String::from(callback_url)
         };
 
         let request = self.client.post(&request_url).json(&body);
 
         let response = request.send()?;
-
         let response_body: PhotogrammetryJob = response.json()?;
 
         match response_body.id {
-            None => {
-                let error_message = String::from("The id field wasn't found in the response body");
-                Err(ServiceError::from(error_message))
-            },
+            None => Err(ServiceError::from("The id field wasn't found in the response body")),
             Some(id) => Ok(id)
         }
     }
 
     /// Retrieves information about a job based on its id
     pub fn get_job(&self, id: &str) -> Result<PhotogrammetryJob, ServiceError>{
-        let services_keeper = self.services_keeper.read().unwrap();
-        let access_information;
-
-        match services_keeper.get_service("photogrammetry"){
-            None => {
-                return Err(ServiceError::from("No photogrammetry service available"));
-            },
-            Some(ai) => {
-                access_information = ai;
-            }
-        }
+        let access_information = self.get_access_information()?;
 
         let request_url = format!("http://{host}:{port}/job/{id}",
                                   host=access_information.get_host(),
@@ -143,17 +132,7 @@ impl PhotogrammetryService {
 
     /// Retrieves information about a job's result based on its id
     pub fn get_job_result_url(&self, id: &str) -> Result<String, ServiceError>{
-        let services_keeper = self.services_keeper.read().unwrap();
-        let access_information;
-
-        match services_keeper.get_service("photogrammetry"){
-            None => {
-                return Err(ServiceError::from("No photogrammetry service available"));
-            },
-            Some(ai) => {
-                access_information = ai;
-            }
-        }
+        let access_information = self.get_access_information()?;
 
         let result_url = format!("http://{host}:{port}/res/{id}.tar.gz",
                                   host=access_information.get_host(),
@@ -163,7 +142,7 @@ impl PhotogrammetryService {
         Ok(result_url)
     }
 
-    /// TODO Error cases
+    /// TODO Error cases, and refactor
     pub fn handle_connection (&self, mut stream: TcpStream) -> Result<(), ServiceError> {
         let mut buffer = [0; 1024];
         let response_status_line;
