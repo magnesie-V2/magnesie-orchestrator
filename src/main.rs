@@ -1,4 +1,5 @@
 mod services;
+mod jobs_buffer;
 
 use std::sync::{Arc, RwLock};
 

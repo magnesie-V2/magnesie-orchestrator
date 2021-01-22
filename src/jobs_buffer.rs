@@ -77,7 +77,7 @@ impl JobsBuffer {
     }
 
     fn get_job(&self) -> &BufferedJob {
-        unimplemented!();
+        &self.jobs[0]
     }
 
     /// Returns true if the buffer has jobs waiting to be processed
