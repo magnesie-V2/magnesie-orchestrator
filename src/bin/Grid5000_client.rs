@@ -9,6 +9,7 @@ use std::env;
 use std::{thread, time};
 
 #[derive(Deserialize, Debug)]
+// Representation of a job reservation response
 struct JobSubmitResponse {
     uid: u32,
     user_uid : String,
@@ -30,6 +31,7 @@ struct JobSubmitResponse {
     assigned_nodes : Vec<String>
 }
 #[derive(Deserialize, Debug)]
+// Representation of an environment deployment response
 struct DeployEnvResponse {
     uid: String,
     site_uid: String,
@@ -44,6 +46,7 @@ struct DeployEnvResponse {
 }
 
 #[derive(Deserialize, Debug)]
+// Representation of a Link
 struct LinkJob {
     rel : String,
     href : String,
@@ -51,6 +54,7 @@ struct LinkJob {
 }
 
 #[derive(Serialize, Debug)]
+// Representation of job reservation request
 struct ReservationRequest {
     name : String,
     resources : String,
@@ -59,6 +63,7 @@ struct ReservationRequest {
 }
 
 #[derive(Serialize, Debug)]
+// Representation of an environment deployment request
 struct DeploymentRequest {
     environment : String,
     nodes : Vec<String>,
@@ -83,18 +88,23 @@ fn main() {
     let ssh_key_path : &str = &args[6];
     
     let ssh_key : String = get_ssh_key(ssh_key_path).unwrap();
-    
-    
+
+    // Reserve a node and get the resposne from API
     let job_waiting : JobSubmitResponse = reserve_node(username, password, site, nb_nodes, walltime).unwrap();
+
+    // Check if the job's reservation is finished
     let mut job_deployed : JobSubmitResponse = get_reservation(username, password, site, job_waiting.uid.to_string()).unwrap();
+
     while job_deployed.state != "running" {
         job_deployed = get_reservation(username, password, site, job_waiting.uid.to_string()).unwrap();
     }
 
+    // When job is reserved, deploy environment on node
     deploy_env_on_node(username, password, site, job_deployed.assigned_nodes, env, ssh_key.as_str());
-    // delete_job(username, password, job.uid.to_string());
+
 }
 
+// Reserve a node on Grid5000
 #[allow(dead_code)]
 fn reserve_node(username : &str, password : &str, site : &str, nb_nodes : &str, walltime : &str) -> Result<JobSubmitResponse, reqwest::Error> {
 
@@ -127,6 +137,7 @@ fn reserve_node(username : &str, password : &str, site : &str, nb_nodes : &str, 
     Ok(response_body)
 }
 
+// Check state of reservation with uid = job_uid
 #[allow(dead_code)]
 fn get_reservation(username : &str, password : &str, site : &str, job_uid : String) -> Result<JobSubmitResponse, reqwest::Error> {
 
@@ -148,6 +159,7 @@ fn get_reservation(username : &str, password : &str, site : &str, job_uid : Stri
     Ok(response_body)
 }
 
+// Deploy provided environment to specified node
 #[allow(dead_code)]
 fn deploy_env_on_node(username : &str, password : &str, site : &str, target_nodes : Vec<String>, environment : &str, ssh_key : &str) -> Result<(), reqwest::Error>  {
 
@@ -174,6 +186,7 @@ fn deploy_env_on_node(username : &str, password : &str, site : &str, target_node
     Ok(())
 }
 
+// Delete reservation of node with uid = job_uid
 #[allow(dead_code)]
 fn delete_job(username : &str, password : &str, site : &str, job_to_delete : String) -> Result<(), reqwest::Error> {
 
@@ -193,6 +206,7 @@ fn delete_job(username : &str, password : &str, site : &str, job_to_delete : Str
     Ok(())
 }
 
+// Get the SSH key from provided file
 #[allow(dead_code)]
 fn get_ssh_key(file_path : &str) -> Result<String, Box<dyn std::error::Error + 'static>> {
     let ssh_key: String = fs::read_to_string(file_path)?;

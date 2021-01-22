@@ -36,6 +36,7 @@ fn install_docker_git(tcp_address : &str, username : &str, pub_key : &Path, priv
 
     assert!(sess.authenticated());
 
+    // Update apt repository
     let mut channel = sess.channel_session().unwrap();
     channel.exec("apt-get update").unwrap();
     let mut s = String::new();
@@ -45,6 +46,7 @@ fn install_docker_git(tcp_address : &str, username : &str, pub_key : &Path, priv
     channel.stderr().read_to_string(&mut err).unwrap();
     println!("{}", err);
 
+    // install dependencies for Docker
     channel = sess.channel_session().unwrap();
     channel.exec("apt-get install apt-transport-https ca-certificates curl gnupg-agent software-properties-common -y").unwrap();
     s = String::new();
@@ -54,6 +56,7 @@ fn install_docker_git(tcp_address : &str, username : &str, pub_key : &Path, priv
     channel.stderr().read_to_string(&mut err).unwrap();
     println!("{}", err);
 
+    // Get Docker Debian GPG Key
     channel = sess.channel_session().unwrap();
     channel.exec("curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -").unwrap();
     s = String::new();
@@ -63,6 +66,7 @@ fn install_docker_git(tcp_address : &str, username : &str, pub_key : &Path, priv
     channel.stderr().read_to_string(&mut err).unwrap();
     println!("{}", err);
 
+    // Add Docker Repository
     channel = sess.channel_session().unwrap();
     channel.exec("add-apt-repository \"deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable\" -y").unwrap();
     s = String::new();
@@ -72,6 +76,7 @@ fn install_docker_git(tcp_address : &str, username : &str, pub_key : &Path, priv
     channel.stderr().read_to_string(&mut err).unwrap();
     println!("{}", err);
 
+    // Update apt repository
     channel = sess.channel_session().unwrap();
     channel.exec("apt-get update").unwrap();
     s = String::new();
@@ -81,6 +86,7 @@ fn install_docker_git(tcp_address : &str, username : &str, pub_key : &Path, priv
     channel.stderr().read_to_string(&mut err).unwrap();
     println!("{}", err);
 
+    // Install Docker
     channel = sess.channel_session().unwrap();
     channel.exec("apt-get install docker-ce docker-ce-cli containerd.io -y").unwrap();
     s = String::new();
@@ -90,6 +96,8 @@ fn install_docker_git(tcp_address : &str, username : &str, pub_key : &Path, priv
     channel.stderr().read_to_string(&mut err).unwrap();
     println!("{}", err);
 
+
+    // Install Git
     channel = sess.channel_session().unwrap();
     channel.exec("apt-get install git-all -y").unwrap();
     s = String::new();
@@ -114,6 +122,7 @@ fn clone_git_repo(tcp_address : &str, username : &str, pub_key : &Path, priv_key
 
     assert!(sess.authenticated());
 
+    // Clone photogrammetry repository
     let  mut channel = sess.channel_session().unwrap();
     channel.exec("git clone https://github.com/magnesie/magnesie-photogrammetry.git").unwrap();
     let mut s = String::new();
@@ -123,6 +132,7 @@ fn clone_git_repo(tcp_address : &str, username : &str, pub_key : &Path, priv_key
     channel.stderr().read_to_string(&mut err).unwrap();
     println!("{}", err);
 
+    // Checkout feature/webservice_mock_ref branch
     channel = sess.channel_session().unwrap();
     channel.exec("git -C magnesie-photogrammetry checkout feature/webservice_mock_ref").unwrap();
     s = String::new();
@@ -147,6 +157,7 @@ fn run_docker(tcp_address : &str, username : &str, pub_key : &Path, priv_key : &
 
     assert!(sess.authenticated());
 
+    // Builde Docker Image
     let mut channel = sess.channel_session().unwrap();
     channel.exec("docker build --tag magnesie-photogrammetry-mock magnesie-photogrammetry").unwrap();
     let mut s = String::new();
@@ -156,6 +167,7 @@ fn run_docker(tcp_address : &str, username : &str, pub_key : &Path, priv_key : &
     channel.stderr().read_to_string(&mut err).unwrap();
     println!("{}", err);
 
+    // Run Docker Image
     channel = sess.channel_session().unwrap();
     channel.exec("cd magnesie-photogrammetry; docker run --rm --name=magnesie-photogrammetry-mock -p 7979:8000 -v $(pwd)/ref:/res magnesie-photogrammetry-mock &").unwrap();
     s = String::new();
