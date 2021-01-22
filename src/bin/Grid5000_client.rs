@@ -1,10 +1,16 @@
+#[allow(dead_code)]
+
 extern crate reqwest;
 extern crate serde;
 
 use serde::{Serialize, Deserialize};
-use std::env;
 use std::fs;
+use std::env;
 use std::{thread, time};
+use std::io::prelude::*;
+use std::net::{TcpStream};
+use ssh2::Session;
+use std::path::Path;
 
 #[derive(Deserialize, Debug)]
 struct JobSubmitResponse {
@@ -63,6 +69,7 @@ fn main() {
     
     let ssh_key : String = get_ssh_key(ssh_key_path).unwrap();
     
+    
     let job_waiting : JobSubmitResponse = reserve_node(username, password, nb_nodes, walltime).unwrap();
     let mut job_deployed : JobSubmitResponse = get_reservation(username, password, job_waiting.uid.to_string()).unwrap();
     while job_deployed.state != "running" {
@@ -72,8 +79,11 @@ fn main() {
     deploy_env_on_node(username, password, job_deployed.assigned_nodes, env, ssh_key.as_str());
     // delete_job(username, password, job.uid.to_string());
     // get_grid5000(username, password);
+
+    // ssh_to_node();
 }
 
+#[allow(dead_code)]
 fn reserve_node(username : &str, password : &str, nb_nodes : &str, walltime : &str) -> Result<JobSubmitResponse, reqwest::Error> {
 
     let api_url = "https://api.grid5000.fr/3.0/sites/rennes/jobs/?pretty";
@@ -104,6 +114,7 @@ fn reserve_node(username : &str, password : &str, nb_nodes : &str, walltime : &s
     Ok(response_body)
 }
 
+#[allow(dead_code)]
 fn get_reservation(username : &str, password : &str, job_uid : String) -> Result<JobSubmitResponse, reqwest::Error> {
 
     thread::sleep(time::Duration::from_secs(5));
@@ -124,7 +135,7 @@ fn get_reservation(username : &str, password : &str, job_uid : String) -> Result
     Ok(response_body)
 }
 
-
+#[allow(dead_code)]
 fn deploy_env_on_node(username : &str, password : &str, target_nodes : Vec<String>, environment : &str, ssh_key : &str) -> Result<(), reqwest::Error>  {
 
     let api_url = "https://api.grid5000.fr/3.0/sites/rennes/deployments";
@@ -151,7 +162,7 @@ fn deploy_env_on_node(username : &str, password : &str, target_nodes : Vec<Strin
 }
 
 #[allow(dead_code)]
-fn get_grid5000(username : &str, password : &str) -> Result<(), reqwest::Error> {
+/*fn get_grid5000(username : &str, password : &str) -> Result<(), reqwest::Error> {
     
     let client = reqwest::blocking::Client::new();
     let res = client.get("https://api.grid5000.fr/3.0/?pretty")
@@ -164,10 +175,10 @@ fn get_grid5000(username : &str, password : &str) -> Result<(), reqwest::Error> 
     println!("Body:\n{}", body);
 
     Ok(())
-}
+}*/
 
 #[allow(dead_code)]
-fn delete_job(username : &str, password : &str, job_to_delete : String) -> Result<(), reqwest::Error> {
+/*fn delete_job(username : &str, password : &str, job_to_delete : String) -> Result<(), reqwest::Error> {
 
     let api_url = "https://api.grid5000.fr/3.0/sites/rennes/jobs/";
 
@@ -185,8 +196,9 @@ fn delete_job(username : &str, password : &str, job_to_delete : String) -> Resul
     println!("Body:\n{}", response_body);
                     
     Ok(())
-}
+}*/
 
+#[allow(dead_code)]
 fn get_ssh_key(file_path : &str) -> Result<String, Box<dyn std::error::Error + 'static>> {
     let ssh_key: String = fs::read_to_string(file_path)?;
     Ok(ssh_key)
