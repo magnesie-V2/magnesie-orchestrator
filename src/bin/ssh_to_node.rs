@@ -21,6 +21,7 @@ fn main() {
     run_docker(tcp_address, username, pub_key, priv_key);
 }
 
+// Install Docker and git via SSH
 #[allow(dead_code)]
 fn install_docker_git(tcp_address : &str, username : &str, pub_key : &Path, priv_key : &Path) {
 
@@ -108,6 +109,7 @@ fn install_docker_git(tcp_address : &str, username : &str, pub_key : &Path, priv
     println!("{}", err);
 }
 
+// Clone photogrammetry repository via SSH
 fn clone_git_repo(tcp_address : &str, username : &str, pub_key : &Path, priv_key : &Path) {
 
     // Connect to the local SSH server
@@ -143,6 +145,7 @@ fn clone_git_repo(tcp_address : &str, username : &str, pub_key : &Path, priv_key
     println!("{}", err);
 }
 
+// Run Docker image via SSH
 fn run_docker(tcp_address : &str, username : &str, pub_key : &Path, priv_key : &Path) {
 
     // Connect to the local SSH server
