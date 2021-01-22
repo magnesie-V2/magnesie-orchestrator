@@ -5,10 +5,12 @@ use std::sync::{Arc, RwLock};
 
 use services::photogrammetry::PhotogrammetryService;
 use services::remote::{ServicesKeeper, ServiceAccessInformation};
+use jobs_buffer::{JobsBuffer, BufferedJob};
 
 #[allow(dead_code)]
 fn main() {
     let services_keeper = Arc::new(RwLock::new(ServicesKeeper::new()));
+    let jobs_buffer = Arc::new(RwLock::new(JobsBuffer::new()));
 
     let photogrammetry_access_info = ServiceAccessInformation::new(
         "172.17.0.1", // 8645cc99-fdca-4a6a-bf45-1eb639a54f2c.mock.pstmn.io           172.17.0.1
