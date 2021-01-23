@@ -25,7 +25,6 @@ impl From<reqwest::Error> for ServiceError {
     }
 }
 
-
 impl From<&str> for ServiceError {
     fn from(error_message: &str) -> Self {
         ServiceError::BasicError(String::from(error_message))
@@ -40,6 +39,17 @@ impl std::fmt::Display for ServiceError{
             ServiceError::RequestError(error) => write!(f, "[ERROR] {}", error.to_string()),
             ServiceError::IOError(error) => write!(f, "[ERROR] {}", error.to_string()),
             ServiceError::EncodingError(error) => write!(f, "[ERROR] {}", error.to_string())
+        }
+    }
+}
+
+impl From<ServiceError> for String {
+    fn from(err: ServiceError) -> Self {
+        match err {
+            ServiceError::BasicError(err) => err,
+            ServiceError::RequestError(err) => err.to_string(),
+            ServiceError::IOError(err) => err.to_string(),
+            ServiceError::EncodingError(err) => err.to_string(),
         }
     }
 }

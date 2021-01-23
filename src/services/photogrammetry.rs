@@ -22,13 +22,14 @@ pub struct PhotogrammetryJobRequestBody{
     pub callback: String
 }
 
-/// Rest client for the photogrammetry service
+/// Rest client for the photogrammetry micro service <br /> <br />
+///
+///
 pub struct PhotogrammetryService {
     services_keeper: Arc<RwLock<ServicesKeeper>>,
     client: Client // it's best to create a client and reuse it for request pooling
 }
 
-#[allow(dead_code)]
 impl PhotogrammetryService {
     pub fn new(services_keeper: Arc<RwLock<ServicesKeeper>>) -> Result<Arc<PhotogrammetryService>, ServiceError> {
         let service = Arc::new(PhotogrammetryService {
@@ -69,7 +70,7 @@ impl PhotogrammetryService {
         Ok(true) // No error thrown so the test returns true
     }
 
-    pub fn get_access_information(&self) -> Result<ServiceAccessInformation, ServiceError>{
+    fn get_access_information(&self) -> Result<ServiceAccessInformation, ServiceError>{
         let services_keeper = self.services_keeper.read().unwrap();
         let sai = services_keeper.get_service("photogrammetry");
 
@@ -131,7 +132,7 @@ impl PhotogrammetryService {
     }
 
     /// Retrieves information about a job's result based on its id
-    pub fn get_job_result_url(&self, id: &str) -> Result<String, ServiceError>{
+    fn get_job_result_url(&self, id: &str) -> Result<String, ServiceError>{
         let access_information = self.get_access_information()?;
 
         let result_url = format!("http://{host}:{port}/res/{id}.tar.gz",
@@ -143,7 +144,7 @@ impl PhotogrammetryService {
     }
 
     /// TODO Error cases, and refactor
-    pub fn handle_connection (&self, mut stream: TcpStream) -> Result<(), ServiceError> {
+    fn handle_connection (&self, mut stream: TcpStream) -> Result<(), ServiceError> {
         let mut buffer = [0; 1024];
         let response_status_line;
         let response_body;
@@ -210,7 +211,7 @@ impl PhotogrammetryService {
         Ok(())
     }
 
-    pub fn job_callback (&self, job_id: &str) -> Result<(), ServiceError>{
+    fn job_callback (&self, job_id: &str) -> Result<(), ServiceError>{
         let result_url = self.get_job_result_url(job_id);
         match result_url {
             Ok(result_url) => {
@@ -223,3 +224,36 @@ impl PhotogrammetryService {
     }
 }
 
+#[test]
+pub fn test(){
+    let services_keeper = Arc::new(RwLock::new(ServicesKeeper::new()));
+
+    let photogrammetry_access_info = ServiceAccessInformation::new(
+        "8645cc99-fdca-4a6a-bf45-1eb639a54f2c.mock.pstmn.io", // 8645cc99-fdca-4a6a-bf45-1eb639a54f2c.mock.pstmn.io           172.17.0.1
+        80, // 80             7979
+        "",
+        "",
+    );
+
+    match PhotogrammetryService::new(services_keeper.clone()) {
+        Ok(service) => {
+            println!("Test: using the photogrammetry service without any cluster selection and service deployment");
+            match service.test() {
+                Ok(_) => {}
+                Err(error) => println!("{}", error)
+            }
+
+            println!("Setting the photogrammetry service information (mock of cluster selection)");
+            services_keeper.write().unwrap().register_service("photogrammetry", photogrammetry_access_info);
+
+            println!("Test: using the photogrammetry service");
+            match service.test() {
+                Ok(_) => {}
+                Err(error) => println!("{}", error)
+            }
+        },
+        Err(_) => unimplemented!(),
+    };
+
+    // loop{} // preventing the app to terminate to avoid having to join services threads with the main thread
+}

@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+/// Keeps a map of the micro services access information <br /> <br />
+/// register_service() <br /> get_service()
 pub struct ServicesKeeper {
     services: HashMap<String, ServiceAccessInformation>,
 }
@@ -22,7 +24,6 @@ impl ServicesKeeper {
     }
 }
 
-#[allow(dead_code)]
 pub struct ServiceAccessInformation {
     host: String,
     port: u16,
@@ -30,7 +31,6 @@ pub struct ServiceAccessInformation {
     password: String,
 }
 
-#[allow(dead_code)]
 impl ServiceAccessInformation {
     pub fn new (host: &str, port: u16, username: &str, password: &str) -> ServiceAccessInformation{
         ServiceAccessInformation {
