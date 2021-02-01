@@ -3,20 +3,19 @@ extern crate reqwest;
 extern crate serde;
 
 use ssh2::Session;
-use std::io::prelude::*;
+use std::{io::prelude::*, path::PathBuf};
 use std::net::TcpStream;
-use std::path::Path;
 
 pub struct SshClient{
-    tcp_address : &'static str,
-    username : &'static str,
-    pub_key: &'static Path,
-    priv_key: &'static Path
+    tcp_address : String,
+    username : String,
+    pub_key: PathBuf,
+    priv_key: PathBuf
 }
 
 impl SshClient {
     
-    pub fn new(tcp_address: &'static str, username: &'static str, pub_key: &'static Path, priv_key: &'static Path) -> SshClient {
+    pub fn new(tcp_address: String, username: String, pub_key: PathBuf, priv_key: PathBuf) -> SshClient {
         SshClient {
             tcp_address,
             username,
@@ -25,15 +24,15 @@ impl SshClient {
         }
     }
 
-    fn initiate_ssh_connection(&self, tcp_address: &str, username: &str, pub_key: &Path, priv_key: &Path) -> Session {
+    fn initiate_ssh_connection(&self) -> Session {
 
-        let tcp = TcpStream::connect(tcp_address).unwrap();
+        let tcp = TcpStream::connect(&self.tcp_address).unwrap();
         let mut sess = Session::new().unwrap();
         sess.set_tcp_stream(tcp);
         sess.handshake().unwrap();
     
         // Try to authenticate with a key pair
-        sess.userauth_pubkey_file(username, Some(pub_key), priv_key, None).unwrap();
+        sess.userauth_pubkey_file(&self.username, Some(&self.pub_key), &self.priv_key, None).unwrap();
     
         assert!(sess.authenticated());
     
@@ -42,9 +41,9 @@ impl SshClient {
 
     // Install Docker and git via SSH
     #[allow(dead_code)]
-    pub fn install_docker_git(&self, tcp_address: &str, username: &str, pub_key: &Path, priv_key: &Path) {
+    pub fn install_docker_git(&self) {
 
-        let sess : Session = self.initiate_ssh_connection(tcp_address, username, pub_key, priv_key);
+        let sess : Session = self.initiate_ssh_connection();
 
         // Update apt repository
         let mut channel = sess.channel_session().unwrap();
@@ -120,9 +119,9 @@ impl SshClient {
     }
 
     // Clone photogrammetry repository via SSH
-    pub fn clone_git_repo(&self, tcp_address: &str, username: &str, pub_key: &Path, priv_key: &Path) {
+    pub fn clone_git_repo(&self) {
 
-        let sess : Session = self.initiate_ssh_connection(tcp_address, username, pub_key, priv_key);
+        let sess : Session = self.initiate_ssh_connection();
 
         // Clone photogrammetry repository
         let mut channel = sess.channel_session().unwrap();
@@ -146,9 +145,9 @@ impl SshClient {
     }
 
     // Run Docker image via SSH
-    pub fn build_photo_docker(&self, tcp_address: &str, username: &str, pub_key: &Path, priv_key: &Path) {
+    pub fn build_photo_docker(&self) {
 
-        let sess : Session = self.initiate_ssh_connection(tcp_address, username, pub_key, priv_key);
+        let sess : Session = self.initiate_ssh_connection();
 
         // Builde Docker Image
         let mut channel = sess.channel_session().unwrap();
@@ -162,9 +161,9 @@ impl SshClient {
     }
 
     // Run Docker image via SSH
-    pub fn run_docker(&self, tcp_address: &str, username: &str, pub_key: &Path, priv_key: &Path) {
+    pub fn run_docker(&self) {
 
-        let sess : Session = self.initiate_ssh_connection(tcp_address, username, pub_key, priv_key);
+        let sess : Session = self.initiate_ssh_connection();
 
         // Run Docker Image
         let mut channel = sess.channel_session().unwrap();

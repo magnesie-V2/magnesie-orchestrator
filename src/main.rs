@@ -3,13 +3,12 @@ mod clusters;
 mod ssh_client;
 
 use crate::clusters::grid5000::Grid5000;
-use crate::clusters::grid5000::grid5000_client_struct::*;
 
 // use crate::clusters::cluster::Cluster;
 
 // use services::service_access_information::*;
 // use services::photogrammetry_service::*;
-use std::{env, path::Path};
+use std::{env, path::{PathBuf}};
 use ssh_client::SshClient;
 
 #[tokio::main]
@@ -26,10 +25,6 @@ async fn main() {
 
     photogrammetry_service.print_access_info();*/
 
-    let cluster = Grid5000::new();
-
-    // println!("{}",&cluster.has_green_energy_available());
-
     let args: Vec<String> = env::args().collect();
 
     let username : &str = &args[1];
@@ -39,19 +34,28 @@ async fn main() {
     let walltime : &str = &args[5];
     let ssh_key_path : &str = &args[6];
 
-    let job_submit_response : JobSubmitResponse = cluster.make_reservation(username, password, site, nb_nodes, walltime, ssh_key_path);
+    let cluster = Grid5000::new(username.to_string(),
+                                        password.to_string(),
+                                        site.to_string(),
+                                        nb_nodes.to_string(),
+                                        walltime.to_string(),
+                                        ssh_key_path.to_string());
 
-    let node = &job_submit_response.assigned_nodes[0];
+    // println!("{}",&cluster.has_green_energy_available());
 
-    let tcp_address = node.as_str();
-    let username = "root";
-    let pub_key: &Path = Path::new("C:\\Users\\Bart\\.ssh\\test.pub");
-    let priv_key: &Path = Path::new("C:\\Users\\Bart\\.ssh\\test.pem");
 
-    let ssh_client : SshClient = SshClient::new(tcp_address, username, pub_key, priv_key);
+    let reserved_node : String = cluster.make_reservation();
 
-    ssh_client.install_docker_git(tcp_address, username, pub_key, priv_key);
-    ssh_client.clone_git_repo(tcp_address, username, pub_key, priv_key);
-    ssh_client.build_photo_docker(tcp_address, username, pub_key, priv_key);
-    ssh_client.run_docker(tcp_address, username, pub_key, priv_key);
+    let username : String = "root".to_string();
+    let pub_key: PathBuf = PathBuf::from("C:\\Users\\Bart\\.ssh\\orchestrateur_key.pub");
+    let priv_key: PathBuf = PathBuf::from("C:\\Users\\Bart\\.ssh\\orchestrateur_key.pem");
+
+    println!("{}", reserved_node);
+
+    let ssh_client : SshClient = SshClient::new(reserved_node, username, pub_key, priv_key);
+
+    ssh_client.install_docker_git();
+    ssh_client.clone_git_repo();
+    ssh_client.build_photo_docker();
+    ssh_client.run_docker();
 }
