@@ -1,41 +1,46 @@
 #[allow(dead_code)]
-
 extern crate reqwest;
 extern crate serde;
 
-use std::io::prelude::*;
-use std::net::{TcpStream};
 use ssh2::Session;
+use std::io::prelude::*;
+use std::net::TcpStream;
 use std::path::Path;
 
 #[allow(unused_must_use)]
 fn main() {
-
-    let tcp_address= "parapide-21.rennes.grid5000.fr:22";
+    let tcp_address = "parapide-21.rennes.grid5000.fr:22";
     let username = "root";
-    let pub_key : &Path = Path::new("C:\\Users\\Bart\\.ssh\\test.pub");
-    let priv_key : &Path = Path::new("C:\\Users\\Bart\\.ssh\\test.pem");
+    let pub_key: &Path = Path::new("C:\\Users\\Bart\\.ssh\\test.pub");
+    let priv_key: &Path = Path::new("C:\\Users\\Bart\\.ssh\\test.pem");
 
     install_docker_git(tcp_address, username, pub_key, priv_key);
     clone_git_repo(tcp_address, username, pub_key, priv_key);
+    build_photo_docker(tcp_address, username, pub_key, priv_key);
     run_docker(tcp_address, username, pub_key, priv_key);
 }
 
-// Install Docker and git via SSH
-#[allow(dead_code)]
-fn install_docker_git(tcp_address : &str, username : &str, pub_key : &Path, priv_key : &Path) {
+fn initiate_ssh_connection(tcp_address: &str, username: &str, pub_key: &Path, priv_key: &Path) -> Session {
 
-    // Connect to the local SSH server
     let tcp = TcpStream::connect(tcp_address).unwrap();
     let mut sess = Session::new().unwrap();
     sess.set_tcp_stream(tcp);
     sess.handshake().unwrap();
 
-    // Try to authenticate with the first identity in the agent.
-    sess.userauth_pubkey_file(username, Some(pub_key), priv_key, None).unwrap();
-    // sess.userauth_password("tester", "password").unwrap();
+    // Try to authenticate with a key pair
+    sess.userauth_pubkey_file(username, Some(pub_key), priv_key, None)
+        .unwrap();
 
     assert!(sess.authenticated());
+
+    return sess;
+}
+
+// Install Docker and git via SSH
+#[allow(dead_code)]
+fn install_docker_git(tcp_address: &str, username: &str, pub_key: &Path, priv_key: &Path) {
+
+    let sess : Session = initiate_ssh_connection(tcp_address, username, pub_key, priv_key);
 
     // Update apt repository
     let mut channel = sess.channel_session().unwrap();
@@ -59,7 +64,9 @@ fn install_docker_git(tcp_address : &str, username : &str, pub_key : &Path, priv
 
     // Get Docker Debian GPG Key
     channel = sess.channel_session().unwrap();
-    channel.exec("curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -").unwrap();
+    channel
+        .exec("curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add -")
+        .unwrap();
     s = String::new();
     channel.read_to_string(&mut s).unwrap();
     println!("{}", s);
@@ -89,14 +96,15 @@ fn install_docker_git(tcp_address : &str, username : &str, pub_key : &Path, priv
 
     // Install Docker
     channel = sess.channel_session().unwrap();
-    channel.exec("apt-get install docker-ce docker-ce-cli containerd.io -y").unwrap();
+    channel
+        .exec("apt-get install docker-ce docker-ce-cli containerd.io -y")
+        .unwrap();
     s = String::new();
     channel.read_to_string(&mut s).unwrap();
     println!("{}", s);
     err = String::new();
     channel.stderr().read_to_string(&mut err).unwrap();
     println!("{}", err);
-
 
     // Install Git
     channel = sess.channel_session().unwrap();
@@ -110,23 +118,15 @@ fn install_docker_git(tcp_address : &str, username : &str, pub_key : &Path, priv
 }
 
 // Clone photogrammetry repository via SSH
-fn clone_git_repo(tcp_address : &str, username : &str, pub_key : &Path, priv_key : &Path) {
+fn clone_git_repo(tcp_address: &str, username: &str, pub_key: &Path, priv_key: &Path) {
 
-    // Connect to the local SSH server
-    let tcp = TcpStream::connect(tcp_address).unwrap();
-    let mut sess = Session::new().unwrap();
-    sess.set_tcp_stream(tcp);
-    sess.handshake().unwrap();
-
-    // Try to authenticate with the first identity in the agent.
-    sess.userauth_pubkey_file(username, Some(pub_key), priv_key, None).unwrap();
-    // sess.userauth_password("tester", "password").unwrap();
-
-    assert!(sess.authenticated());
+    let sess : Session = initiate_ssh_connection(tcp_address, username, pub_key, priv_key);
 
     // Clone photogrammetry repository
-    let  mut channel = sess.channel_session().unwrap();
-    channel.exec("git clone https://github.com/magnesie/magnesie-photogrammetry.git").unwrap();
+    let mut channel = sess.channel_session().unwrap();
+    channel
+        .exec("git clone https://github.com/magnesie/magnesie-photogrammetry.git")
+        .unwrap();
     let mut s = String::new();
     channel.read_to_string(&mut s).unwrap();
     println!("{}", s);
@@ -136,7 +136,9 @@ fn clone_git_repo(tcp_address : &str, username : &str, pub_key : &Path, priv_key
 
     // Checkout feature/webservice_mock_ref branch
     channel = sess.channel_session().unwrap();
-    channel.exec("git -C magnesie-photogrammetry checkout feature/webservice_mock_ref").unwrap();
+    channel
+        .exec("git -C magnesie-photogrammetry checkout feature/webservice_mock_ref")
+        .unwrap();
     s = String::new();
     channel.read_to_string(&mut s).unwrap();
     println!("{}", s);
@@ -146,37 +148,35 @@ fn clone_git_repo(tcp_address : &str, username : &str, pub_key : &Path, priv_key
 }
 
 // Run Docker image via SSH
-fn run_docker(tcp_address : &str, username : &str, pub_key : &Path, priv_key : &Path) {
+fn build_photo_docker(tcp_address: &str, username: &str, pub_key: &Path, priv_key: &Path) {
 
-    // Connect to the local SSH server
-    let tcp = TcpStream::connect(tcp_address).unwrap();
-    let mut sess = Session::new().unwrap();
-    sess.set_tcp_stream(tcp);
-    sess.handshake().unwrap();
-
-    // Try to authenticate with the first identity in the agent.
-    sess.userauth_pubkey_file(username, Some(pub_key), priv_key, None).unwrap();
-    // sess.userauth_password("tester", "password").unwrap();
-
-    assert!(sess.authenticated());
+    let sess : Session = initiate_ssh_connection(tcp_address, username, pub_key, priv_key);
 
     // Builde Docker Image
     let mut channel = sess.channel_session().unwrap();
-    channel.exec("docker build --tag magnesie-photogrammetry-mock magnesie-photogrammetry").unwrap();
+    channel
+        .exec("docker build --tag magnesie-photogrammetry-mock magnesie-photogrammetry")
+        .unwrap();
     let mut s = String::new();
     channel.read_to_string(&mut s).unwrap();
     println!("{}", s);
     let mut err = String::new();
     channel.stderr().read_to_string(&mut err).unwrap();
     println!("{}", err);
+}
+
+// Run Docker image via SSH
+fn run_docker(tcp_address: &str, username: &str, pub_key: &Path, priv_key: &Path) {
+
+    let sess : Session = initiate_ssh_connection(tcp_address, username, pub_key, priv_key);
 
     // Run Docker Image
-    channel = sess.channel_session().unwrap();
+    let mut channel = sess.channel_session().unwrap();
     channel.exec("cd magnesie-photogrammetry; docker run --rm --name=magnesie-photogrammetry-mock -p 7979:8000 -v $(pwd)/ref:/res magnesie-photogrammetry-mock &").unwrap();
-    s = String::new();
+    let mut s = String::new();
     channel.read_to_string(&mut s).unwrap();
     println!("{}", s);
-    err = String::new();
+    let mut err = String::new();
     channel.stderr().read_to_string(&mut err).unwrap();
     println!("{}", err);
 }
