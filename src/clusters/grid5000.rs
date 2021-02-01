@@ -2,7 +2,7 @@
 extern crate reqwest;
 extern crate serde;
 
-mod grid5000_client_struct;
+pub mod grid5000_client_struct;
 
 use std::{thread, time};
 use std::fs;
@@ -19,7 +19,8 @@ pub struct Grid5000 {
 }
 
 impl Grid5000 {
-    pub fn new(_: &str) -> Grid5000 {
+
+    pub fn new() -> Grid5000 {
         Grid5000 {
             api_base_url: "https://api.grid5000.fr/3.0/sites/",
             deploy_url: "/deployments/",
@@ -35,7 +36,7 @@ impl Grid5000 {
     }
 
     #[allow(dead_code)]
-    pub fn make_reservation(&self, username: &str, password: &str, site: &str, nb_nodes: &str, walltime: &str, ssh_key_path: &str) {
+    pub fn make_reservation(&self, username: &str, password: &str, site: &str, nb_nodes: &str, walltime: &str, ssh_key_path: &str) -> JobSubmitResponse {
 
         let env = "debian10-x64-min";
 
@@ -50,8 +51,7 @@ impl Grid5000 {
             self.get_reservation(username, password, site, job_waiting.uid.to_string()).unwrap();
 
         while job_deployed.state != "running" {
-            job_deployed =
-                self.get_reservation(username, password, site, job_waiting.uid.to_string()).unwrap();
+            job_deployed = self.get_reservation(username, password, site, job_waiting.uid.to_string()).unwrap();
         }
 
         // When job is reserved, deploy environment on node
@@ -59,10 +59,12 @@ impl Grid5000 {
             username,
             password,
             site,
-            job_deployed.assigned_nodes,
+            &job_deployed.assigned_nodes,
             env,
             ssh_key.as_str(),
         ).unwrap();
+
+        return job_deployed;
     }
 
     // Delete reservation of node with uid = job_uid
@@ -138,11 +140,11 @@ impl Grid5000 {
     }
 
     // Deploy provided environment to specified node
-    fn deploy_env_on_node(&self, username: &str, password: &str, site: &str, target_nodes: Vec<String>, environment: &str, ssh_key: &str) -> Result<(), reqwest::Error> {
+    fn deploy_env_on_node(&self, username: &str, password: &str, site: &str, target_nodes: &Vec<String>, environment: &str, ssh_key: &str) -> Result<(), reqwest::Error> {
         let api_url = format!("{}{}{}", self.api_base_url, site, self.deploy_url);
 
         let request_body = DeploymentRequest {
-            nodes: target_nodes,
+            nodes: target_nodes.clone(),
             environment: environment.to_string(),
             key: ssh_key.to_string(),
         };
