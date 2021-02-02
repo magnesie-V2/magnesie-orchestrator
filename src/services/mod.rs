@@ -10,6 +10,6 @@ pub use remote::*;
 pub mod photogrammetry;
 pub use photogrammetry::*;
 
-pub mod input;
-pub use input::*;
+pub mod image_storage;
+pub use image_storage::*;
 

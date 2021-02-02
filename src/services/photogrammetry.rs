@@ -16,7 +16,7 @@ pub struct PhotogrammetryJob {
 }
 
 #[derive(Serialize, Debug)]
-pub struct PhotogrammetryJobRequestBody{
+struct PhotogrammetryJobRequestBody{
     pub photos: Vec<String>,
     pub callback: String
 }
