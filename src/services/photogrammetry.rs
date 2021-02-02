@@ -7,8 +7,7 @@ use reqwest::blocking::Client;
 use serde::Deserialize;
 use serde::Serialize;
 
-use super::service_error::ServiceError;
-use super::remote::{ServicesKeeper, ServiceAccessInformation};
+use super::{Service, ServicesKeeper, ServiceAccessInformation, ServiceError};
 
 #[derive(Deserialize, Debug)]
 pub struct PhotogrammetryJob {
@@ -17,7 +16,7 @@ pub struct PhotogrammetryJob {
 }
 
 #[derive(Serialize, Debug)]
-pub struct PhotogrammetryJobRequestBody{
+struct PhotogrammetryJobRequestBody{
     pub photos: Vec<String>,
     pub callback: String
 }
@@ -28,6 +27,16 @@ pub struct PhotogrammetryJobRequestBody{
 pub struct PhotogrammetryService {
     services_keeper: Arc<RwLock<ServicesKeeper>>,
     client: Client // it's best to create a client and reuse it for request pooling
+}
+
+impl Service for PhotogrammetryService{
+    fn get_name(&self) -> String {
+        "photogrammetry".to_string()
+    }
+
+    fn get_services_keeper(&self) -> Arc<RwLock<ServicesKeeper>> {
+        self.services_keeper.clone()
+    }
 }
 
 impl PhotogrammetryService {
@@ -68,21 +77,6 @@ impl PhotogrammetryService {
         println!("Job of id {} is currently: {}", job.id.unwrap(), job.status.unwrap());
 
         Ok(true) // No error thrown so the test returns true
-    }
-
-    fn get_access_information(&self) -> Result<ServiceAccessInformation, ServiceError>{
-        let services_keeper = self.services_keeper.read().unwrap();
-        let sai = services_keeper.get_service("photogrammetry");
-
-        match sai{
-            Some(sai) => Ok(ServiceAccessInformation::new(
-                sai.get_host(),
-                sai.get_port().clone(),
-                sai.get_username(),
-                sai.get_password()
-            )),
-            _ => Err(ServiceError::from("No photogrammetry service available"))
-        }
     }
 
     /// Sends pictures urls to the photogrammetry webservice and returns the id of the created job
