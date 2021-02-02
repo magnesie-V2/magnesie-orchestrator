@@ -60,6 +60,7 @@ impl ToString for JobsBuffer{
 #[cfg(test)]
 pub mod tests{
     use super::*;
+    use std::time::SystemTime;
 
     #[test]
     pub fn test_new() {
@@ -72,19 +73,19 @@ pub mod tests{
         let mut buffer = JobsBuffer::new();
 
         assert_eq!(0, buffer.jobs.len());
-        buffer.add_job(BufferedJob::new(&None, &Vec::new(), &1));
+        buffer.add_job(BufferedJob::new(&None, &Vec::new(), "1", SystemTime::now()));
         assert_eq!(1, buffer.jobs.len());
-        buffer.add_job(BufferedJob::new(&None, &Vec::new(), &1));
+        buffer.add_job(BufferedJob::new(&None, &Vec::new(), "1", SystemTime::now()));
         assert_eq!(2, buffer.jobs.len());
-        buffer.add_job(BufferedJob::new(&None, &Vec::new(), &1));
+        buffer.add_job(BufferedJob::new(&None, &Vec::new(), "1", SystemTime::now()));
         assert_eq!(3, buffer.jobs.len());
     }
 
     #[test]
     pub fn test_remove_job() {
         let mut buffer = JobsBuffer::new();
-        let j1 = BufferedJob::new(&Some("azer"), &Vec::new(), &1);
-        let j2 = BufferedJob::new(&Some("1234"), &Vec::new(), &2);
+        let j1 = BufferedJob::new(&Some("azer"), &Vec::new(), "1", SystemTime::now());
+        let j2 = BufferedJob::new(&Some("1234"), &Vec::new(), "2", SystemTime::now());
 
         assert_eq!(0, buffer.jobs.len());
         buffer.add_job(j1);
@@ -104,7 +105,7 @@ pub mod tests{
     #[test]
     pub fn test_get_job() {
         let mut buffer = JobsBuffer::new();
-        let job = BufferedJob::new(&Some("azer"), &Vec::new(), &1);
+        let job = BufferedJob::new(&Some("azer"), &Vec::new(), "1", SystemTime::now());
         let job_string = job.to_string();
 
        match buffer.get_job(){
@@ -128,8 +129,8 @@ pub mod tests{
     #[test]
     pub fn test_has_buffered_jobs() {
         let mut buffer = JobsBuffer::new();
-        let j1 = BufferedJob::new(&Some("azer"), &Vec::new(), &1);
-        let j2 = BufferedJob::new(&Some("1234"), &Vec::new(), &2);
+        let j1 = BufferedJob::new(&Some("azer"), &Vec::new(), "1", SystemTime::now());
+        let j2 = BufferedJob::new(&Some("1234"), &Vec::new(), "2", SystemTime::now());
 
         assert_eq!(false, buffer.has_buffered_jobs());
         buffer.add_job(j1);
