@@ -119,7 +119,7 @@ impl SshClient {
     }
 
     // Clone photogrammetry repository via SSH
-    pub fn clone_git_repo(&self) {
+    pub fn git_clone_mock_repo(&self) {
 
         let sess : Session = self.initiate_ssh_connection();
 

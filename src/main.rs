@@ -30,24 +30,22 @@ async fn main() {
     let username : &str = &args[1];
     let password : &str = &args[2];
     let site : &str = &args[3];
-    let nb_nodes : &str = &args[4];
-    let walltime : &str = &args[5];
-    let ssh_key_path : &str = &args[6];
+    let walltime : &str = &args[4];
+    let ssh_key_path : &str = &args[5];
 
-    // let cluster = Grid5000::new(username.to_string(),
-    //                                     password.to_string(),
-    //                                     site.to_string(),
-    //                                     nb_nodes.to_string(),
-    //                                     walltime.to_string(),
-    //                                     ssh_key_path.to_string());
+    let cluster = Grid5000::new(String::from(username),
+                                        String::from(password),
+                                        String::from(site),
+                                        String::from(walltime),
+                                        String::from(ssh_key_path));
 
     // println!("{}",&cluster.has_green_energy_available());
 
 
-    // let reserved_node : String = cluster.make_reservation();
-    let reserved_node : String = "parapide-21.rennes.grid5000.fr:22".to_string();
+    let reserved_node : String = format!("{}{}", cluster.make_reservation(), ":22"); 
+    // let reserved_node : String = "parapide-21.rennes.grid5000.fr:22".to_string();
 
-    let username : String = "root".to_string();
+    let username : String = String::from("root");
     let pub_key: PathBuf = PathBuf::from("C:\\Users\\Bart\\.ssh\\orchestrateur_key.pub");
     let priv_key: PathBuf = PathBuf::from("C:\\Users\\Bart\\.ssh\\orchestrateur_key.pem");
 
@@ -56,7 +54,7 @@ async fn main() {
     let ssh_client : SshClient = SshClient::new(reserved_node, username, pub_key, priv_key);
 
     ssh_client.install_docker_git();
-    ssh_client.clone_git_repo();
+    ssh_client.git_clone_mock_repo();
     ssh_client.build_photo_docker();
     ssh_client.run_docker();
 }

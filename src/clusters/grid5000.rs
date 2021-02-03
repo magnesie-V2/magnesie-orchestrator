@@ -26,7 +26,14 @@ pub struct Grid5000 {
 
 impl Grid5000 {
 
-    pub fn new(username: String, password: String, site: String, nb_nodes: String, walltime: String, ssh_key_path: String) -> Grid5000 {
+    /**
+        username : username Grid5000
+        password : password Grid5000
+        site : le site sur lequel on souhaite déployer le service de photogrammetry (nantes, rennes, nacy etc...)
+        walltime : le temps de réservation des nodes, en heures
+        ssh_key_path : le chemin vers la clé publique à utilsier pour la réservation. 
+    */
+    pub fn new(username: String, password: String, site: String, walltime: String, ssh_key_path: String) -> Grid5000 {
         Grid5000 {
             api_base_url: "https://api.grid5000.fr/3.0/sites/",
             deploy_url: "/deployments/",
@@ -35,12 +42,13 @@ impl Grid5000 {
             username,
             password,
             site,
-            nb_nodes,
+            nb_nodes : String::from("1"),
             walltime,
             ssh_key_path
         }
     }
 
+    #[allow(dead_code)]
     pub fn has_green_energy_available(self) -> bool {
         let now = Utc::now();
         let minute = now.minute();
@@ -50,7 +58,7 @@ impl Grid5000 {
     #[allow(dead_code)]
     pub fn make_reservation(&self) -> String {
 
-        let env = "debian10-x64-min";
+        let env : String = String::from("debian10-x64-min");
 
         let ssh_key: String = self.get_ssh_key().unwrap();
 
@@ -67,10 +75,10 @@ impl Grid5000 {
         }
 
         // When job is reserved, deploy environment on node
-        let mut deploy_env_response : DeployEnvResponse = self.deploy_env_on_node(&job_deployed.assigned_nodes,env,ssh_key.as_str()).unwrap();
+        let mut deploy_env_response : DeployEnvResponse = self.deploy_env_on_node(&job_deployed.assigned_nodes,env, ssh_key).unwrap();
 
         while deploy_env_response.status != "terminated" && deploy_env_response.status != "error" && deploy_env_response.status != "canceled" {
-            deploy_env_response = self.get_deployment(deploy_env_response.uid.to_string()).unwrap();
+            deploy_env_response = self.get_deployment(deploy_env_response.uid).unwrap();
         }
 
         return job_deployed.assigned_nodes.remove(0);
@@ -78,13 +86,13 @@ impl Grid5000 {
 
     // Delete reservation of node with uid = job_uid
     #[allow(dead_code)]
-    pub fn delete_reservation(&self, username: &str, password: &str, site: &str, job_to_delete: String) -> Result<(), reqwest::Error> {
-        let api_url = format!("{}{}{}", self.api_base_url, site, self.job_url);
+    pub fn delete_reservation(&self, job_to_delete: String) -> Result<(), reqwest::Error> {
+        let api_url = format!("{}{}{}", self.api_base_url, self.site, self.job_url);
 
         let client = reqwest::blocking::Client::new();
         let res = client
             .delete(format!("{}{}", api_url, job_to_delete).as_str())
-            .basic_auth(username, Some(password))
+            .basic_auth(&self.username, Some(&self.password))
             .send()
             .expect("Failed to send request");
 
@@ -100,14 +108,14 @@ impl Grid5000 {
         let api_url = format!("{}{}{}", self.api_base_url, self.site, self.job_url_pretty);
 
         let mut deploy_option: Vec<String> = Vec::new();
-        deploy_option.push("deploy".to_string());
+        deploy_option.push(String::from("deploy"));
 
         let resource = format!("nodes={},walltime={}", self.nb_nodes, self.walltime);
 
         let request_body = ReservationRequest {
-            name: "test_magnes.ie".to_string(),
+            name: String::from("test_magnes.ie"),
             resources: resource,
-            command: "sleep 7200".to_string(),
+            command: String::from("sleep 7200"),
             types: deploy_option,
         };
 
@@ -149,13 +157,13 @@ impl Grid5000 {
     }
 
     // Deploy provided environment to specified node
-    fn deploy_env_on_node(&self, target_nodes: &Vec<String>, environment: &str, ssh_key: &str) -> Result<DeployEnvResponse, reqwest::Error> {
+    fn deploy_env_on_node(&self, target_nodes: &Vec<String>, environment: String, ssh_key: String) -> Result<DeployEnvResponse, reqwest::Error> {
         let api_url = format!("{}{}{}", self.api_base_url, self.site, self.deploy_url);
 
         let request_body = DeploymentRequest {
             nodes: target_nodes.clone(),
-            environment: environment.to_string(),
-            key: ssh_key.to_string(),
+            environment: environment,
+            key: ssh_key,
         };
 
         let client = reqwest::blocking::Client::new();
