@@ -69,7 +69,7 @@ impl Grid5000 {
         // When job is reserved, deploy environment on node
         let mut deploy_env_response : DeployEnvResponse = self.deploy_env_on_node(&job_deployed.assigned_nodes,env,ssh_key.as_str()).unwrap();
 
-        while deploy_env_response.status != "running" {
+        while deploy_env_response.status != "terminated" && deploy_env_response.status != "error" && deploy_env_response.status != "canceled" {
             deploy_env_response = self.get_deployment(deploy_env_response.uid.to_string()).unwrap();
         }
 
@@ -175,7 +175,8 @@ impl Grid5000 {
     }
 
     fn get_deployment(&self, deployment_uid: String) -> Result<DeployEnvResponse, reqwest::Error> {
-        
+        thread::sleep(time::Duration::from_secs(60));
+
         let api_url = format!("{}{}{}", self.api_base_url, self.site, self.deploy_url);
 
         let client = reqwest::blocking::Client::new();

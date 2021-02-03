@@ -34,17 +34,18 @@ async fn main() {
     let walltime : &str = &args[5];
     let ssh_key_path : &str = &args[6];
 
-    let cluster = Grid5000::new(username.to_string(),
-                                        password.to_string(),
-                                        site.to_string(),
-                                        nb_nodes.to_string(),
-                                        walltime.to_string(),
-                                        ssh_key_path.to_string());
+    // let cluster = Grid5000::new(username.to_string(),
+    //                                     password.to_string(),
+    //                                     site.to_string(),
+    //                                     nb_nodes.to_string(),
+    //                                     walltime.to_string(),
+    //                                     ssh_key_path.to_string());
 
     // println!("{}",&cluster.has_green_energy_available());
 
 
-    let reserved_node : String = cluster.make_reservation();
+    // let reserved_node : String = cluster.make_reservation();
+    let reserved_node : String = "parapide-21.rennes.grid5000.fr:22".to_string();
 
     let username : String = "root".to_string();
     let pub_key: PathBuf = PathBuf::from("C:\\Users\\Bart\\.ssh\\orchestrateur_key.pub");
