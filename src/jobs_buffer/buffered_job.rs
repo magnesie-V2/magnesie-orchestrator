@@ -6,7 +6,7 @@ use chrono::DateTime;
 pub struct BufferedJob{
     pub id: Option<String>,
     pub photos: Vec<String>,
-    pub input_id: String,
+    pub submission_id: String,
     pub submission_date: SystemTime,
 }
 
@@ -23,7 +23,7 @@ impl BufferedJob{
         BufferedJob {
             id,
             photos,
-            input_id,
+            submission_id: input_id,
             submission_date
         }
     }
@@ -35,8 +35,8 @@ impl ToString for BufferedJob {
         let formatted_buffered_time = format!("{}", datetime.format("%d/%m/%Y %T"));
 
         match &self.id {
-            Some(id) => format!("BufferedJob(id: {}, #photos: {}, request_id: {}, buffered_time: {})", id, self.photos.len(), self.input_id, formatted_buffered_time),
-            None => format!("BufferedJob(id: None, #photos: {}, request_id: {}, buffered_time: {})", self.photos.len(), self.input_id, formatted_buffered_time)
+            Some(id) => format!("BufferedJob(id: {}, #photos: {}, request_id: {}, buffered_time: {})", id, self.photos.len(), self.submission_id, formatted_buffered_time),
+            None => format!("BufferedJob(id: None, #photos: {}, request_id: {}, buffered_time: {})", self.photos.len(), self.submission_id, formatted_buffered_time)
         }
     }
 }
@@ -60,22 +60,22 @@ mod test{
         let buffered_job = BufferedJob::new(&no_id, &no_photos, &input_id, SystemTime::now());
         assert_eq!(None, buffered_job.id);
         assert_eq!(0, buffered_job.photos.len());
-        assert_eq!("1", buffered_job.input_id);
+        assert_eq!("1", buffered_job.submission_id);
         // id, no photos
         let buffered_job = BufferedJob::new(&id, &no_photos, &input_id, SystemTime::now());
         assert_eq!(Some("id".to_string()), buffered_job.id);
         assert_eq!(0, buffered_job.photos.len());
-        assert_eq!("1", buffered_job.input_id);
+        assert_eq!("1", buffered_job.submission_id);
         // no id, photos
         let buffered_job = BufferedJob::new(&no_id, &photos, &input_id, SystemTime::now());
         assert_eq!(None, buffered_job.id);
         assert_eq!(3, buffered_job.photos.len());
-        assert_eq!("1", buffered_job.input_id);
+        assert_eq!("1", buffered_job.submission_id);
         // id, photos
         let buffered_job = BufferedJob::new(&id, &photos, &input_id, SystemTime::now());
         assert_eq!(Some("id".to_string()), buffered_job.id);
         assert_eq!(3, buffered_job.photos.len());
-        assert_eq!("1", buffered_job.input_id);
+        assert_eq!("1", buffered_job.submission_id);
     }
 
     #[test]

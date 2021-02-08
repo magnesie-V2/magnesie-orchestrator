@@ -39,7 +39,7 @@ impl JobsBuffer {
         };
     }
 
-    pub fn get_job(&mut self) -> Option<&mut BufferedJob> {
+    pub fn pop_job(&mut self) -> Option<&mut BufferedJob> {
         let jobs = &mut self.jobs;
 
         jobs.get_mut(0)
@@ -108,7 +108,7 @@ pub mod tests{
         let job = BufferedJob::new(&Some("azer"), &Vec::new(), "1", SystemTime::now());
         let job_string = job.to_string();
 
-       match buffer.get_job(){
+       match buffer.pop_job(){
            None => {}
            Some(_) => {
                assert_eq!(true, false)
@@ -116,7 +116,7 @@ pub mod tests{
        }
         buffer.add_job(job);
 
-        match buffer.get_job(){
+        match buffer.pop_job(){
             Some(j) => {
                 assert_eq!(job_string, j.to_string());
             }
