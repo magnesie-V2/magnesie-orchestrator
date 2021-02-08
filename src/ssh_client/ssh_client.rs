@@ -135,7 +135,7 @@ impl SshClient {
 
         // Checkout feature/webservice_mock_ref branch
         channel = sess.channel_session().unwrap();
-        channel.exec("git -C magnesie-photogrammetry checkout feature/webservice_mock_ref").unwrap();
+        channel.exec("git -C magnesie-photogrammetry checkout feature/webservice").unwrap();
         s = String::new();
         channel.read_to_string(&mut s).unwrap();
         println!("{}", s);
@@ -151,7 +151,7 @@ impl SshClient {
 
         // Builde Docker Image
         let mut channel = sess.channel_session().unwrap();
-        channel.exec("docker build --tag magnesie-photogrammetry-mock magnesie-photogrammetry").unwrap();
+        channel.exec("docker build --tag magnesie-photogrammetry magnesie-photogrammetry").unwrap();
         let mut s = String::new();
         channel.read_to_string(&mut s).unwrap();
         println!("{}", s);
@@ -167,7 +167,7 @@ impl SshClient {
 
         // Run Docker Image
         let mut channel = sess.channel_session().unwrap();
-        channel.exec("cd magnesie-photogrammetry; docker run --rm --name=magnesie-photogrammetry-mock -p 7979:8000 -v $(pwd)/ref:/res magnesie-photogrammetry-mock &").unwrap();
+        channel.exec("cd magnesie-photogrammetry; docker run --rm --name=magnesie-photogrammetry -p 7979:8000 &").unwrap();
         let mut s = String::new();
         channel.read_to_string(&mut s).unwrap();
         println!("{}", s);

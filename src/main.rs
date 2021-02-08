@@ -2,14 +2,10 @@ mod services;
 mod clusters;
 mod ssh_client;
 
-use crate::clusters::grid5000::Grid5000;
-
 // use crate::clusters::cluster::Cluster;
 
 // use services::service_access_information::*;
 // use services::photogrammetry_service::*;
-use std::{env, path::{PathBuf}};
-use ssh_client::SshClient;
 
 #[tokio::main]
 async fn main() {
@@ -25,36 +21,5 @@ async fn main() {
 
     photogrammetry_service.print_access_info();*/
 
-    let args: Vec<String> = env::args().collect();
-
-    let username : &str = &args[1];
-    let password : &str = &args[2];
-    let site : &str = &args[3];
-    let walltime : &str = &args[4];
-    let ssh_key_path : &str = &args[5];
-
-    let cluster = Grid5000::new(String::from(username),
-                                        String::from(password),
-                                        String::from(site),
-                                        String::from(walltime),
-                                        String::from(ssh_key_path));
-
     // println!("{}",&cluster.has_green_energy_available());
-
-
-    let reserved_node : String = format!("{}{}", cluster.make_reservation(), ":22"); 
-    // let reserved_node : String = "parapide-21.rennes.grid5000.fr:22".to_string();
-
-    let username : String = String::from("root");
-    let pub_key: PathBuf = PathBuf::from("C:\\Users\\Bart\\.ssh\\orchestrateur_key.pub");
-    let priv_key: PathBuf = PathBuf::from("C:\\Users\\Bart\\.ssh\\orchestrateur_key.pem");
-
-    println!("{}", reserved_node);
-
-    let ssh_client : SshClient = SshClient::new(reserved_node, username, pub_key, priv_key);
-
-    ssh_client.install_docker_git();
-    ssh_client.git_clone_mock_repo();
-    ssh_client.build_photo_docker();
-    ssh_client.run_docker();
 }

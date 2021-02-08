@@ -4,12 +4,14 @@ extern crate serde;
 
 pub mod grid5000_client_struct;
 
-use std::{thread, time};
+use std::{env, thread, time, path::{PathBuf}};
 use std::fs;
 
 use chrono::{Timelike, Utc};
 
 use grid5000_client_struct::*;
+
+use crate::ssh_client::SshClient;
 
 pub struct Grid5000 {
     api_base_url: &'static str,
@@ -204,7 +206,42 @@ impl Grid5000 {
 
     // Get the SSH key from provided file
     fn get_ssh_key(&self) -> Result<String, Box<dyn std::error::Error + 'static>> {
+        println!("{}", &self.ssh_key_path);
         let ssh_key: String = fs::read_to_string(&self.ssh_key_path)?;
         Ok(ssh_key)
     }
+}
+
+#[test]
+fn launch_grid5000_client() {
+    
+    let args: Vec<String> = env::args().collect();
+
+    let username : &str = &args[2];
+    let password : &str = &args[3];
+    let site : &str = &args[4];
+    let walltime : &str = &args[5];
+    let ssh_key_path : &str = &args[6];
+
+    let cluster = Grid5000::new(String::from(username),
+                                        String::from(password),
+                                        String::from(site),
+                                        String::from(walltime),
+                                        String::from(ssh_key_path));
+
+
+    let reserved_node : String = format!("{}{}", cluster.make_reservation(), ":22"); 
+
+    let username : String = String::from("root");
+    let pub_key: PathBuf = PathBuf::from("C:\\Users\\Bart\\.ssh\\orchestrateur_key.pub");
+    let priv_key: PathBuf = PathBuf::from("C:\\Users\\Bart\\.ssh\\orchestrateur_key.pem");
+
+    println!("{}", reserved_node);
+
+    let ssh_client : SshClient = SshClient::new(reserved_node, username, pub_key, priv_key);
+
+    ssh_client.install_docker_git();
+    ssh_client.git_clone_mock_repo();
+    ssh_client.build_photo_docker();
+    ssh_client.run_docker();
 }
