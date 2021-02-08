@@ -39,10 +39,16 @@ impl JobsBuffer {
         };
     }
 
-    pub fn pop_job(&mut self) -> Option<&mut BufferedJob> {
+    pub fn get_job(&mut self) -> Option<&mut BufferedJob> {
         let jobs = &mut self.jobs;
 
         jobs.get_mut(0)
+    }
+
+    pub fn submission_exists(&self, submission_id: &str) -> bool {
+        let jobs = &self.jobs;
+
+        jobs.iter().any(|j| j.submission_id == submission_id)
     }
 
     /// Returns true if the buffer has jobs waiting to be processed
@@ -108,7 +114,7 @@ pub mod tests{
         let job = BufferedJob::new(&Some("azer"), &Vec::new(), "1", SystemTime::now());
         let job_string = job.to_string();
 
-       match buffer.pop_job(){
+       match buffer.get_job(){
            None => {}
            Some(_) => {
                assert_eq!(true, false)
@@ -116,7 +122,7 @@ pub mod tests{
        }
         buffer.add_job(job);
 
-        match buffer.pop_job(){
+        match buffer.get_job(){
             Some(j) => {
                 assert_eq!(job_string, j.to_string());
             }
