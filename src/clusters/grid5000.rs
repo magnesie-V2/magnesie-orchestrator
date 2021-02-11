@@ -1,9 +1,11 @@
 #[allow(dead_code)]
+#[allow(unused_imports)]
 extern crate reqwest;
 extern crate serde;
 
 pub mod grid5000_client_struct;
 
+#[allow(unused_imports)]
 use std::{env, thread, time, path::{PathBuf}};
 use std::fs;
 
@@ -11,6 +13,7 @@ use chrono::{Timelike, Utc};
 
 use grid5000_client_struct::*;
 
+#[allow(unused_imports)]
 use crate::ssh_client::SshClient;
 
 pub struct Grid5000 {
@@ -35,6 +38,7 @@ impl Grid5000 {
         walltime : le temps de réservation des nodes, en heures
         ssh_key_path : le chemin vers la clé publique à utilsier pour la réservation. 
     */
+    #[allow(dead_code)]
     pub fn new(username: String, password: String, site: String, walltime: String, ssh_key_path: String) -> Grid5000 {
         Grid5000 {
             api_base_url: "https://api.grid5000.fr/3.0/sites/",
@@ -58,6 +62,7 @@ impl Grid5000 {
     }
 
     #[allow(dead_code)]
+    // Make a reservartio nand return the adress of the reserved node
     pub fn make_reservation(&self) -> String {
 
         let env : String = String::from("debian10-x64-min");
@@ -236,7 +241,7 @@ fn launch_grid5000_client() {
     let pub_key: PathBuf = PathBuf::from("C:\\Users\\Bart\\.ssh\\orchestrateur_key.pub");
     let priv_key: PathBuf = PathBuf::from("C:\\Users\\Bart\\.ssh\\orchestrateur_key.pem");
 
-    println!("{}", reserved_node);
+    // println!("{}", reserved_node);
 
     let ssh_client : SshClient = SshClient::new(reserved_node, username, pub_key, priv_key);
 

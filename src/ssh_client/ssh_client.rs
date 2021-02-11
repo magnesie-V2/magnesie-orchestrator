@@ -15,6 +15,7 @@ pub struct SshClient{
 
 impl SshClient {
     
+    #[allow(dead_code)]
     pub fn new(tcp_address: String, username: String, pub_key: PathBuf, priv_key: PathBuf) -> SshClient {
         SshClient {
             tcp_address,
@@ -119,6 +120,7 @@ impl SshClient {
     }
 
     // Clone photogrammetry repository via SSH
+    #[allow(dead_code)]
     pub fn git_clone_mock_repo(&self) {
 
         let sess : Session = self.initiate_ssh_connection();
@@ -145,6 +147,7 @@ impl SshClient {
     }
 
     // Run Docker image via SSH
+    #[allow(dead_code)]
     pub fn build_photo_docker(&self) {
 
         let sess : Session = self.initiate_ssh_connection();
@@ -161,6 +164,7 @@ impl SshClient {
     }
 
     // Run Docker image via SSH
+    #[allow(dead_code)]
     pub fn run_docker(&self) {
 
         let sess : Session = self.initiate_ssh_connection();
