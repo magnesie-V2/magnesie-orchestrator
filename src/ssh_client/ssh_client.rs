@@ -18,7 +18,7 @@ impl SshClient {
     #[allow(dead_code)]
     pub fn new(tcp_address: String, username: String, pub_key: PathBuf, priv_key: PathBuf) -> SshClient {
         SshClient {
-            tcp_address,
+            tcp_address: format!("{}{}", tcp_address, ":22"),
             username,
             pub_key,
             priv_key

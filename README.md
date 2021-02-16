@@ -18,6 +18,6 @@
 Pour tester le déploiement du service de photogrammétrie sur l'orchestrateur :
 
 ```bash
-cargo test launch_grid5000_client -- "username" "password" "site" "walltime" "ssh_pub_key_path" --nocapture
+cargo test launch_grid5000_client -- "username" "password" "walltime" --nocapture
 ```
 
