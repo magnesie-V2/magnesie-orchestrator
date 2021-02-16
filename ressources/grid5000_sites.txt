@@ -1,0 +1,8 @@
+grenoble
+lille
+luxembourg
+lyon
+nancy
+nantes
+rennes
+sophia

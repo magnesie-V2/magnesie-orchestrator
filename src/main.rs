@@ -27,10 +27,7 @@ async fn main() {
 
     // println!("{}",&cluster.has_green_energy_available());
 
-    let args: Vec<String> = env::args().collect();
-    let api_key : &str = &args[1];
-    // let city : &str = &args[2];
-
-    let meteo_client = MeteoClient::new(api_key.to_string());
-    meteo_client.get_weather_for_grid5000_sites();
+    let meteo_client = MeteoClient::new();
+    let grid5000_meteo_array = meteo_client.get_weather_for_grid5000_sites();
+    print!("{:?}", grid5000_meteo_array);
 }

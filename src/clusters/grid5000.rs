@@ -5,16 +5,26 @@ extern crate serde;
 
 pub mod grid5000_client_struct;
 
+
 #[allow(unused_imports)]
-use std::{env, thread, time, path::{PathBuf}};
-use std::fs;
+use std::{env, 
+          thread, 
+          time,
+          fs, 
+          time::{SystemTime, UNIX_EPOCH},
+          path::{Path, PathBuf}, 
+          io::BufReader, 
+          fs::File};
 
 use chrono::{Timelike, Utc};
 
 use grid5000_client_struct::*;
 
+use rand::Rng;
+
 #[allow(unused_imports)]
 use crate::ssh_client::SshClient;
+use crate::meteo_service::MeteoClient;
 
 pub struct Grid5000 {
     api_base_url: &'static str,
@@ -55,12 +65,28 @@ impl Grid5000 {
     }
 
     #[allow(dead_code)]
+    pub fn new_random_site(username: String, password: String, walltime: String, ssh_key_path: String) -> Grid5000 {
+        Grid5000 {
+            api_base_url: "https://api.grid5000.fr/3.0/sites/",
+            deploy_url: "/deployments/",
+            job_url_pretty: "/jobs/?pretty/",
+            job_url: "/jobs/",
+            username,
+            password,
+            site: choose_random_site_with_green_energy(),
+            nb_nodes : String::from("1"),
+            walltime,
+            ssh_key_path
+        }
+    }
+
+    #[allow(dead_code)]
     pub fn has_green_energy_available(self) -> bool {
         let now = Utc::now();
         let minute = now.minute();
         return if minute % 2 == 0 { true } else { false };
     }
-
+    
     #[allow(dead_code)]
     // Make a reservartio nand return the adress of the reserved node
     pub fn make_reservation(&self) -> String {
@@ -217,6 +243,39 @@ impl Grid5000 {
     }
 }
 
+#[allow(dead_code)]
+pub fn get_sites_with_green_energy() -> Vec<String> {
+    /*let now = Utc::now();
+    let minute = now.minute();
+    return if minute % 2 == 0 { true } else { false };*/
+
+    let start = SystemTime::now();
+    let now = start
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards").as_secs();
+
+    let meteo_client : MeteoClient = MeteoClient::new();
+    let grid5000_meteo_array : Vec<(String,(u64, f64, u64))> = meteo_client.get_weather_for_grid5000_sites();
+    
+    let ret : Vec<String> = grid5000_meteo_array.into_iter()
+                                                                    .filter(|x : &(String, (u64, f64, u64)) | (x.1.0 == 800 && now < x.1.2) || x.1.1 > 4.2)
+                                                                    .map(|x| x.0)
+                                                                    .collect();
+    
+    return ret;        
+}
+
+#[allow(dead_code)]
+pub fn choose_random_site_with_green_energy() -> String {
+
+    let mut available_sites : Vec<String> = get_sites_with_green_energy();
+
+    let rand_num = rand::thread_rng().gen_range(0..available_sites.len());
+
+    return available_sites.remove(rand_num);
+
+}
+
 #[test]
 fn launch_grid5000_client() {
     
@@ -224,9 +283,12 @@ fn launch_grid5000_client() {
 
     let username : &str = &args[2];
     let password : &str = &args[3];
-    let site : &str = &args[4];
-    let walltime : &str = &args[5];
-    let ssh_key_path : &str = &args[6];
+    let walltime : &str = &args[4];
+    let ssh_key_path : &str = &args[5];
+    
+    let site : &str = &choose_random_site_with_green_energy();
+
+    println!("Attempting reservation on site {}", &site);
 
     let cluster = Grid5000::new(String::from(username),
                                         String::from(password),
