@@ -9,7 +9,7 @@
 ## Configuration
 
 * Modifier la clé d'API pour OpenWeatherMap dans config/open_weather_map.json
-* Ajouter une paire de clé ssh au format pem nommée orchestrateur.pem et orchestrateur.pub dans config.
+* Ajouter une paire de clé ssh au format pem nommée orchestrateur_key.pem et orchestrateur_key.pub dans le dossier config.
     * La clé publique doit être connue par le cloud provider (Grid5000 par exemple)
 * Vérifier la liste des sites Grid5000 dans ressources/grid5000_sites.txt. Ajouter ceux qui manquent si besoin.
 

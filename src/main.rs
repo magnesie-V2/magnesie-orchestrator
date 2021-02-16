@@ -3,7 +3,6 @@ mod clusters;
 mod ssh_client;
 mod meteo_service;
 
-use std::{env};
 use meteo_service::MeteoClient;
 
 // use crate::clusters::cluster::Cluster;
