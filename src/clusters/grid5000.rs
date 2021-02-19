@@ -1,17 +1,30 @@
 #[allow(dead_code)]
+#[allow(unused_imports)]
 extern crate reqwest;
 extern crate serde;
 
 pub mod grid5000_client_struct;
 
-use std::{env, thread, time, path::{PathBuf}};
-use std::fs;
+
+#[allow(unused_imports)]
+use std::{env, 
+          thread, 
+          time,
+          fs, 
+          time::{SystemTime, UNIX_EPOCH},
+          path::{Path, PathBuf}, 
+          io::BufReader, 
+          fs::File};
 
 use chrono::{Timelike, Utc};
 
 use grid5000_client_struct::*;
 
+use rand::Rng;
+
+#[allow(unused_imports)]
 use crate::ssh_client::SshClient;
+use crate::meteo_service::MeteoClient;
 
 pub struct Grid5000 {
     api_base_url: &'static str,
@@ -35,6 +48,7 @@ impl Grid5000 {
         walltime : le temps de réservation des nodes, en heures
         ssh_key_path : le chemin vers la clé publique à utilsier pour la réservation. 
     */
+    #[allow(dead_code)]
     pub fn new(username: String, password: String, site: String, walltime: String, ssh_key_path: String) -> Grid5000 {
         Grid5000 {
             api_base_url: "https://api.grid5000.fr/3.0/sites/",
@@ -51,13 +65,35 @@ impl Grid5000 {
     }
 
     #[allow(dead_code)]
+    pub fn new_random_site(username: String, password: String, walltime: String, ssh_key_path: String) -> Grid5000 {
+        
+        let mut ret = Grid5000 {
+            api_base_url: "https://api.grid5000.fr/3.0/sites/",
+            deploy_url: "/deployments/",
+            job_url_pretty: "/jobs/?pretty/",
+            job_url: "/jobs/",
+            site : String::new(),
+            username,
+            password,
+            nb_nodes : String::from("1"),
+            walltime,
+            ssh_key_path
+        };
+
+        ret.site = ret.choose_random_site_with_green_energy();
+
+        return ret;
+    }
+
+    #[allow(dead_code)]
     pub fn has_green_energy_available(self) -> bool {
         let now = Utc::now();
         let minute = now.minute();
         return if minute % 2 == 0 { true } else { false };
     }
-
+    
     #[allow(dead_code)]
+    // Make a reservartio nand return the adress of the reserved node
     pub fn make_reservation(&self) -> String {
 
         let env : String = String::from("debian10-x64-min");
@@ -210,6 +246,39 @@ impl Grid5000 {
         let ssh_key: String = fs::read_to_string(&self.ssh_key_path)?;
         Ok(ssh_key)
     }
+
+    #[allow(dead_code)]
+    fn get_sites_with_green_energy(&self) -> Vec<String> {
+        /*let now = Utc::now();
+        let minute = now.minute();
+        return if minute % 2 == 0 { true } else { false };*/
+
+        let start = SystemTime::now();
+        let now = start
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards").as_secs();
+
+        let meteo_client : MeteoClient = MeteoClient::new();
+        let grid5000_meteo_array : Vec<(String,(u64, f64, u64))> = meteo_client.get_weather_for_grid5000_sites();
+        
+        let ret : Vec<String> = grid5000_meteo_array.into_iter()
+                                                                        .filter(|x : &(String, (u64, f64, u64)) | (x.1.0 == 800 && now < x.1.2) || x.1.1 > 4.2)
+                                                                        .map(|x| x.0)
+                                                                        .collect();
+        
+        return ret;        
+    }
+
+    #[allow(dead_code)]
+    fn choose_random_site_with_green_energy(&self) -> String {
+
+        let mut available_sites : Vec<String> = self.get_sites_with_green_energy();
+
+        let rand_num = rand::thread_rng().gen_range(0..available_sites.len());
+
+        return available_sites.remove(rand_num);
+
+    }
 }
 
 #[test]
@@ -221,27 +290,35 @@ fn launch_grid5000_client() {
     let password : &str = &args[3];
     let site : &str = &args[4];
     let walltime : &str = &args[5];
-    let ssh_key_path : &str = &args[6];
+    
+    let node_username : String = String::from("root");
+    
+    let pub_key : String = String::from("config/orchestrateur_key.pub");
+    let pub_key_path: PathBuf = PathBuf::from(&pub_key);
+
+    let priv_key: PathBuf = PathBuf::from("config/orchestrateur_key.pem");
+
+    /*let cluster = Grid5000::new_random_site(String::from(username),
+                                        String::from(password),
+                                        String::from(walltime),
+                                        pub_key);*/
 
     let cluster = Grid5000::new(String::from(username),
-                                        String::from(password),
-                                        String::from(site),
-                                        String::from(walltime),
-                                        String::from(ssh_key_path));
+                                String::from(password),
+                                String::from(site),
+                                String::from(walltime),
+                                pub_key);
 
+    println!("Attempting reservation on site {}", &cluster.site);
 
-    let reserved_node : String = format!("{}{}", cluster.make_reservation(), ":22"); 
+    let reserved_node : String = cluster.make_reservation(); 
 
-    let username : String = String::from("root");
-    let pub_key: PathBuf = PathBuf::from("C:\\Users\\Bart\\.ssh\\orchestrateur_key.pub");
-    let priv_key: PathBuf = PathBuf::from("C:\\Users\\Bart\\.ssh\\orchestrateur_key.pem");
 
     println!("{}", reserved_node);
 
-    let ssh_client : SshClient = SshClient::new(reserved_node, username, pub_key, priv_key);
+    let ssh_client : SshClient = SshClient::new(reserved_node, node_username, pub_key_path, priv_key);
 
-    ssh_client.install_docker_git();
-    ssh_client.git_clone_mock_repo();
-    ssh_client.build_photo_docker();
+    ssh_client.install_docker();
+    ssh_client.pull_photo_docker();
     ssh_client.run_docker();
 }

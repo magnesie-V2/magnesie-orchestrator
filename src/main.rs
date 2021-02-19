@@ -1,6 +1,11 @@
 mod services;
 mod jobs_buffer;
 mod orchestrator;
+mod clusters;
+mod ssh_client;
+mod meteo_service;
+
+use meteo_service::MeteoClient;
 
 use std::sync::{Arc, RwLock};
 
@@ -32,6 +37,6 @@ fn main() -> Result<(), String>{
     );
     orchestrator.start();
 
+    // println!("{}",&cluster.has_green_energy_available());
     Ok(())
 }
-

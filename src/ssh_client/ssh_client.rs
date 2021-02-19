@@ -15,9 +15,10 @@ pub struct SshClient{
 
 impl SshClient {
     
+    #[allow(dead_code)]
     pub fn new(tcp_address: String, username: String, pub_key: PathBuf, priv_key: PathBuf) -> SshClient {
         SshClient {
-            tcp_address,
+            tcp_address: format!("{}{}", tcp_address, ":22"),
             username,
             pub_key,
             priv_key
@@ -41,7 +42,7 @@ impl SshClient {
 
     // Install Docker and git via SSH
     #[allow(dead_code)]
-    pub fn install_docker_git(&self) {
+    pub fn install_docker(&self) {
 
         let sess : Session = self.initiate_ssh_connection();
 
@@ -106,52 +107,17 @@ impl SshClient {
         err = String::new();
         channel.stderr().read_to_string(&mut err).unwrap();
         println!("{}", err);
-
-        // Install Git
-        channel = sess.channel_session().unwrap();
-        channel.exec("apt-get install git-all -y").unwrap();
-        s = String::new();
-        channel.read_to_string(&mut s).unwrap();
-        println!("{}", s);
-        err = String::new();
-        channel.stderr().read_to_string(&mut err).unwrap();
-        println!("{}", err);
-    }
-
-    // Clone photogrammetry repository via SSH
-    pub fn git_clone_mock_repo(&self) {
-
-        let sess : Session = self.initiate_ssh_connection();
-
-        // Clone photogrammetry repository
-        let mut channel = sess.channel_session().unwrap();
-        channel.exec("git clone https://github.com/magnesie/magnesie-photogrammetry.git").unwrap();
-        let mut s = String::new();
-        channel.read_to_string(&mut s).unwrap();
-        println!("{}", s);
-        let mut err = String::new();
-        channel.stderr().read_to_string(&mut err).unwrap();
-        println!("{}", err);
-
-        // Checkout feature/webservice_mock_ref branch
-        channel = sess.channel_session().unwrap();
-        channel.exec("git -C magnesie-photogrammetry checkout feature/webservice").unwrap();
-        s = String::new();
-        channel.read_to_string(&mut s).unwrap();
-        println!("{}", s);
-        err = String::new();
-        channel.stderr().read_to_string(&mut err).unwrap();
-        println!("{}", err);
     }
 
     // Run Docker image via SSH
-    pub fn build_photo_docker(&self) {
+    #[allow(dead_code)]
+    pub fn pull_photo_docker(&self) {
 
         let sess : Session = self.initiate_ssh_connection();
 
         // Builde Docker Image
         let mut channel = sess.channel_session().unwrap();
-        channel.exec("docker build --tag magnesie-photogrammetry magnesie-photogrammetry").unwrap();
+        channel.exec("docker pull mgaonach/magnesie-photogrammetry-mock:latest").unwrap();
         let mut s = String::new();
         channel.read_to_string(&mut s).unwrap();
         println!("{}", s);
@@ -161,13 +127,14 @@ impl SshClient {
     }
 
     // Run Docker image via SSH
+    #[allow(dead_code)]
     pub fn run_docker(&self) {
 
         let sess : Session = self.initiate_ssh_connection();
 
         // Run Docker Image
         let mut channel = sess.channel_session().unwrap();
-        channel.exec("cd magnesie-photogrammetry; docker run --rm --name=magnesie-photogrammetry -p 7979:8000 &").unwrap();
+        channel.exec("docker run --name=magnesie-photogrammetry-mock -p 7879:8000 mgaonach/magnesie-photogrammetry-mock &").unwrap();
         let mut s = String::new();
         channel.read_to_string(&mut s).unwrap();
         println!("{}", s);
