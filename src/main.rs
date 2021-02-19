@@ -15,7 +15,7 @@ fn main() -> Result<(), String>{
     let image_storage_service = ImageStorageService::new(services_keeper.clone())?;
     let input_access_info = ServiceAccessInformation::new(
         "localhost",
-        8080,
+        7880,
         "",
         "",
     );
@@ -24,8 +24,8 @@ fn main() -> Result<(), String>{
     let photogrammetry_service = PhotogrammetryService::new(services_keeper.clone())?;
 
     let orchestrator = Orchestrator::new(
-        2,
-        60,
+        10,
+        86400,
         jobs_buffer.clone(),
         image_storage_service.clone(),
         photogrammetry_service.clone()
@@ -34,3 +34,4 @@ fn main() -> Result<(), String>{
 
     Ok(())
 }
+

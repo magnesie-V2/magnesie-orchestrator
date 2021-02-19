@@ -3,11 +3,13 @@ use std::sync::{Arc, RwLock};
 
 use crate::services::{ImageStorageService, PhotogrammetryService, ServiceError, Submission};
 use crate::jobs_buffer::{JobsBuffer, BufferedJob};
+
 use std::time::SystemTime;
+use chrono::{DateTime, FixedOffset, ParseError, offset::Utc, NaiveDate, NaiveDateTime};
 
 pub struct Orchestrator{
-    pub ticks_delay: u64,
-    pub green_energy_timeout: u64,
+    ticks_delay: u64,
+    green_energy_timeout: u64,
     jobs_buffer: Arc<RwLock<JobsBuffer>>,
     image_storage: Arc<ImageStorageService>,
     photogrammetry: Arc<PhotogrammetryService>
@@ -16,7 +18,9 @@ pub struct Orchestrator{
 impl Orchestrator {
     /// @param ticks_delay delay between ticks of the orchestrator in seconds
     /// @param green_energy_timeout delay before forcing jobs processing without green energy in seconds
-    pub fn new(ticks_delay: u64, green_energy_timeout: u64, jobs_buffer: Arc<RwLock<JobsBuffer>>, image_storage: Arc<ImageStorageService>, photogrammetry: Arc<PhotogrammetryService>) -> Orchestrator{
+    pub fn new(ticks_delay: u64, green_energy_timeout: u64, jobs_buffer: Arc<RwLock<JobsBuffer>>,
+               image_storage: Arc<ImageStorageService>,
+               photogrammetry: Arc<PhotogrammetryService>) -> Orchestrator{
         Orchestrator{
             ticks_delay,
             green_energy_timeout,
@@ -28,38 +32,39 @@ impl Orchestrator {
 
     pub fn start(&self){
         loop {
-            let new_submissions = self.image_storage.get_new_submissions();
-            // TODO
-            /*match new_submissions {
-                Ok(list) => {
-                    let buffer_reader = self.jobs_buffer.read().unwrap();
-                    let mut new_subs: Vec<Submission> = Vec::new();
-                    for s in list.into_iter() {
-                        if !buffer_reader.submission_exists(&s.id) {
-                            &new_subs.push(s);
-                        }
-                    }
-                    let mut buffer_writer = self.jobs_buffer.write().unwrap();
-                    let new_subs_len = new_subs.len();
-                    for s in new_subs.into_iter(){
-                        buffer_writer.add_job(BufferedJob{
-                            id: None,
-                            photos: s.photos,
-                            submission_id: s.id,
-                            submission_date: SystemTime::now()
-                        });
-                    }
+            // println!("[ORCHESTRATOR] Tick");
+            if let Err(er) = self.add_submissions_to_buffer() { println!("{}", er.to_string()) }
 
-                    println!("[ORCHESTRATOR] {} submission(s) found", new_subs_len);
-                }
-                Err(err) => {
-                    println!("{}", err.to_string());
-                }
-            }*/
-
-            println!("tick");
-            thread::sleep(time::Duration::from_secs(self.ticks_delay));
+            if let buffer = self.jobs_buffer.read().unwrap().has_buffered_jobs() {
+                drop(buffer);
+                // println!("Green energy workflow");
+            }
+            thread::sleep(time::Duration::from_secs(self.ticks_delay.clone()));
         }
     }
-}
 
+    fn add_submissions_to_buffer(&self) -> Result<(), ServiceError>{
+        let new_submissions = self.image_storage.get_new_submissions()?;
+
+        let mut buffer = self.jobs_buffer.write().unwrap();
+
+        for s in new_submissions.into_iter() {
+            let photos: Vec<&str> = s.photos.iter().map(|s| s as &str).collect();
+            let submission_time = DateTime::parse_from_str(&s.submission_date, "%Y-%m-%dT%H:%M:%S%.3f%z");
+
+            match submission_time {
+                Ok(s_time) => {
+                    let job = BufferedJob::new(&None, &photos, &s.id, SystemTime::from(s_time));
+                    if let false = buffer.submission_exists(&job) {
+                        buffer.add_job(job);
+                    }
+                }
+                Err(er) => {
+                    println!("[ORCHESTRATOR] Error: unable to parse datetime of submission {} ({}). Make sure the datetime follows the same pattern as 2021-01-17T14:32:14.184+0001", s.id, er.to_string());
+                }
+            }
+        }
+
+        Ok(())
+    }
+}

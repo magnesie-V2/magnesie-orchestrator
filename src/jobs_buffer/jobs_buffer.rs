@@ -15,8 +15,12 @@ impl JobsBuffer {
 
     pub fn add_job(&mut self, job: BufferedJob) {
         println!("[JobsBuffer] Adding job {}", job.to_string());
-        self.jobs.push(job);
-        println!("[JobsBuffer] --> OK");
+        if !self.submission_exists(&job) {
+            self.jobs.push(job);
+            println!("[JobsBuffer] --> OK");
+        } else {
+            println!("[JobsBuffer] --> Error: a job with submission_id={} already exists", job.submission_id);
+        }
     }
 
     pub fn remove_job(&mut self, id: &str){
@@ -45,10 +49,10 @@ impl JobsBuffer {
         jobs.get_mut(0)
     }
 
-    pub fn submission_exists(&self, submission_id: &str) -> bool {
+    pub fn submission_exists(&self, submission: &BufferedJob) -> bool {
         let jobs = &self.jobs;
 
-        jobs.iter().any(|j| j.submission_id == submission_id)
+        jobs.iter().any(|j| j.submission_id == submission.submission_id)
     }
 
     /// Returns true if the buffer has jobs waiting to be processed
@@ -79,19 +83,19 @@ pub mod tests{
         let mut buffer = JobsBuffer::new();
 
         assert_eq!(0, buffer.jobs.len());
-        buffer.add_job(BufferedJob::new(&None, &Vec::new(), "1", SystemTime::now()));
+        buffer.add_job(BufferedJob::new(&None, &Vec::new(), &1, SystemTime::now()));
         assert_eq!(1, buffer.jobs.len());
-        buffer.add_job(BufferedJob::new(&None, &Vec::new(), "1", SystemTime::now()));
+        buffer.add_job(BufferedJob::new(&None, &Vec::new(), &2, SystemTime::now()));
         assert_eq!(2, buffer.jobs.len());
-        buffer.add_job(BufferedJob::new(&None, &Vec::new(), "1", SystemTime::now()));
+        buffer.add_job(BufferedJob::new(&None, &Vec::new(), &3, SystemTime::now()));
         assert_eq!(3, buffer.jobs.len());
     }
 
     #[test]
     pub fn test_remove_job() {
         let mut buffer = JobsBuffer::new();
-        let j1 = BufferedJob::new(&Some("azer"), &Vec::new(), "1", SystemTime::now());
-        let j2 = BufferedJob::new(&Some("1234"), &Vec::new(), "2", SystemTime::now());
+        let j1 = BufferedJob::new(&Some("azer"), &Vec::new(), &1, SystemTime::now());
+        let j2 = BufferedJob::new(&Some("1234"), &Vec::new(), &2, SystemTime::now());
 
         assert_eq!(0, buffer.jobs.len());
         buffer.add_job(j1);
@@ -111,7 +115,7 @@ pub mod tests{
     #[test]
     pub fn test_get_job() {
         let mut buffer = JobsBuffer::new();
-        let job = BufferedJob::new(&Some("azer"), &Vec::new(), "1", SystemTime::now());
+        let job = BufferedJob::new(&Some("azer"), &Vec::new(), &1, SystemTime::now());
         let job_string = job.to_string();
 
        match buffer.get_job(){
@@ -135,13 +139,25 @@ pub mod tests{
     #[test]
     pub fn test_has_buffered_jobs() {
         let mut buffer = JobsBuffer::new();
-        let j1 = BufferedJob::new(&Some("azer"), &Vec::new(), "1", SystemTime::now());
-        let j2 = BufferedJob::new(&Some("1234"), &Vec::new(), "2", SystemTime::now());
+        let j1 = BufferedJob::new(&Some("azer"), &Vec::new(), &1, SystemTime::now());
+        let j2 = BufferedJob::new(&Some("1234"), &Vec::new(), &2, SystemTime::now());
 
         assert_eq!(false, buffer.has_buffered_jobs());
         buffer.add_job(j1);
         assert_eq!(true, buffer.has_buffered_jobs());
         buffer.add_job(j2);
         assert_eq!(true, buffer.has_buffered_jobs());
+    }
+
+    #[test]
+    pub fn test_submission_exists(){
+        let mut buffer = JobsBuffer::new();
+        let j1 = BufferedJob::new(&Some("azer"), &Vec::new(), &1, SystemTime::now());
+
+        assert_eq!(false, buffer.submission_exists(&j1));
+        buffer.add_job(j1);
+
+        let j1 = BufferedJob::new(&Some("azer"), &Vec::new(), &1, SystemTime::now());
+        assert_eq!(true, buffer.submission_exists(&j1));
     }
 }

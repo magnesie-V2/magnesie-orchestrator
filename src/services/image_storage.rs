@@ -13,14 +13,14 @@ use super::{Service, ServicesKeeper, ServiceAccessInformation, ServiceError};
 
 #[derive(Deserialize, Debug)]
 pub struct Submission {
-    pub id: String,
+    pub id: i32,
     pub photos: Vec<String>,
     pub submission_date: String,
 }
 
 #[derive(Serialize, Debug)]
 struct SubmissionUpdateRequestBody {
-    pub id: String,
+    pub id: i32,
     pub status: String,
 }
 
@@ -40,6 +40,7 @@ impl ImageStorageService {
     }
 
     pub fn get_new_submissions(&self) -> Result<Vec<Submission>, ServiceError> {
+        println!("[ImageStorage] Fetching new submissions from the service");
         let access_information = self.get_access_information()?;
 
         let request_url = format!("http://{host}:{port}/new_submissions",
@@ -54,7 +55,8 @@ impl ImageStorageService {
         Ok(response_body)
     }
 
-    pub fn change_submission_status(&self, id: &str, status: &str) -> Result<(), ServiceError> {
+    pub fn change_submission_status(&self, id: &i32, status: &str) -> Result<(), ServiceError> {
+        println!("[ImageStorage] Changing status of submission {} to {}", id, status);
         let access_information = self.get_access_information()?;
 
         let request_url = format!("http://{host}:{port}/change_submission_status",
@@ -62,7 +64,7 @@ impl ImageStorageService {
                                   port=access_information.get_port());
 
         let body = SubmissionUpdateRequestBody {
-            id: id.to_string(),
+            id: id.clone(),
             status: status.to_string()
         };
 
@@ -116,7 +118,7 @@ pub fn test(){
                 }
                 Err(error) => println!("{}", error)
             }
-            match service.change_submission_status("azeazeazr", "Done") {
+            match service.change_submission_status(&1, "Done") {
                 Ok(jobs) => {
                     println!("Changed submission status");
                 }

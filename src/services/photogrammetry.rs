@@ -80,7 +80,8 @@ impl PhotogrammetryService {
     }
 
     /// Sends pictures urls to the photogrammetry webservice and returns the id of the created job
-    pub fn create_job(&self, pictures_urls: &[&str], callback_url: &str) -> Result<String, ServiceError> {
+    pub fn create_job(&self, images_urls: &[&str], callback_url: &str) -> Result<String, ServiceError> {
+        println!("[Photogrammetry] Creating a job from {} photos", images_urls.len());
         let access_information = self.get_access_information()?;
 
         let request_url = format!("http://{host}:{port}/job",
@@ -88,7 +89,7 @@ impl PhotogrammetryService {
                                   port=access_information.get_port());
 
         let body = PhotogrammetryJobRequestBody {
-            photos: pictures_urls.to_vec().iter().map(|s| s.to_string()).collect(),
+            photos: images_urls.to_vec().iter().map(|s| s.to_string()).collect(),
             callback: String::from(callback_url)
         };
 
@@ -105,6 +106,7 @@ impl PhotogrammetryService {
 
     /// Retrieves information about a job based on its id
     pub fn get_job(&self, id: &str) -> Result<PhotogrammetryJob, ServiceError>{
+        println!("[Photogrammetry] Getting information about job {}", id);
         let access_information = self.get_access_information()?;
 
         let request_url = format!("http://{host}:{port}/job/{id}",
@@ -127,6 +129,7 @@ impl PhotogrammetryService {
 
     /// Retrieves information about a job's result based on its id
     fn get_job_result_url(&self, id: &str) -> Result<String, ServiceError>{
+        println!("[Photogrammetry] Getting job {} result url", id);
         let access_information = self.get_access_information()?;
 
         let result_url = format!("http://{host}:{port}/res/{id}.tar.gz",
