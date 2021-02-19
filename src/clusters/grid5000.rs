@@ -288,19 +288,26 @@ fn launch_grid5000_client() {
 
     let username : &str = &args[2];
     let password : &str = &args[3];
-    let walltime : &str = &args[4];
+    let site : &str = &args[4];
+    let walltime : &str = &args[5];
     
     let node_username : String = String::from("root");
     
     let pub_key : String = String::from("config/orchestrateur_key.pub");
-    
-    let pub_key_path: PathBuf = PathBuf::from("pub_key");
+    let pub_key_path: PathBuf = PathBuf::from(&pub_key);
+
     let priv_key: PathBuf = PathBuf::from("config/orchestrateur_key.pem");
 
-    let cluster = Grid5000::new_random_site(String::from(username),
+    /*let cluster = Grid5000::new_random_site(String::from(username),
                                         String::from(password),
                                         String::from(walltime),
-                                        pub_key);
+                                        pub_key);*/
+
+    let cluster = Grid5000::new(String::from(username),
+                                String::from(password),
+                                String::from(site),
+                                String::from(walltime),
+                                pub_key);
 
     println!("Attempting reservation on site {}", &cluster.site);
 
@@ -311,8 +318,7 @@ fn launch_grid5000_client() {
 
     let ssh_client : SshClient = SshClient::new(reserved_node, node_username, pub_key_path, priv_key);
 
-    // ssh_client.install_docker_git();
-//     ssh_client.git_clone_mock_repo();
-//     ssh_client.build_photo_docker();
-//     ssh_client.run_docker();
+    ssh_client.install_docker();
+    ssh_client.pull_photo_docker();
+    ssh_client.run_docker();
 }
