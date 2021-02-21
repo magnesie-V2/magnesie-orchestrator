@@ -52,7 +52,11 @@ mod test {
     use super::*;
 
     struct TestCluster;
-    impl Cluster for TestCluster{}
+    impl Cluster for TestCluster{
+        fn make_reservation(self) -> String{
+            unimplemented!();
+        }
+    }
 
     #[test]
     fn test_add_cluster(){

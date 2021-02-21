@@ -19,7 +19,7 @@ mod test {
 
     struct TestCluster;
     impl Cluster for TestCluster {
-        fn make_reservation(&self) -> String{
+        fn make_reservation(self) -> String{
             unimplemented!();
         }
     }
