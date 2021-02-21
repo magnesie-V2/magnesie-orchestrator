@@ -19,7 +19,7 @@ impl JobsBuffer {
             self.jobs.push(job);
             println!("[JobsBuffer] --> OK");
         } else {
-            println!("[JobsBuffer] --> Error: a job with submission_id={} already exists", job.submission_id);
+            println!("[ERROR] A job with submission_id={} already exists", job.submission_id);
         }
     }
 
@@ -38,15 +38,39 @@ impl JobsBuffer {
                 println!("[JobsBuffer] --> OK");
             },
             None => {
-                println!("[JobsBuffer] --> FAILED");
+                println!("[ERROR] No job with id {} currently in the buffer", id);
             }
         };
     }
 
-    pub fn get_job(&mut self) -> Option<&mut BufferedJob> {
-        let jobs = &mut self.jobs;
+    pub fn get_job_by_id(&mut self, id: &str) -> Option<&mut BufferedJob> {
+        let index = self.jobs.iter().position(|job| {
+            match &job.id {
+                Some(current_id) => current_id == id,
+                None => false
+            }
+        });
 
-        jobs.get_mut(0)
+        match index {
+            Some(i) => {
+                self.jobs.get_mut(i)
+            },
+            None => {
+                None
+            }
+        }
+    }
+
+    pub fn get_jobs_to_run(&mut self) -> Vec<&mut BufferedJob>{
+        let mut jobs_to_run = Vec::new();
+
+        for job in self.jobs.iter_mut(){
+            if job.id.is_none() {
+                jobs_to_run.push(job)
+            }
+        }
+
+        jobs_to_run
     }
 
     pub fn submission_exists(&self, submission: &BufferedJob) -> bool {
@@ -112,6 +136,7 @@ pub mod tests{
         }
     }
 
+    /*
     #[test]
     pub fn test_get_job() {
         let mut buffer = JobsBuffer::new();
@@ -135,6 +160,7 @@ pub mod tests{
             }
         }
     }
+    */
 
     #[test]
     pub fn test_has_buffered_jobs() {

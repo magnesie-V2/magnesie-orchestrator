@@ -52,6 +52,7 @@ impl ImageStorageService {
         let response = request.send()?;
         let response_body: Vec<Submission> = response.json()?;
 
+        println!("[ImageStorage] --> OK ({} found)", response_body.len());
         Ok(response_body)
     }
 
@@ -72,10 +73,13 @@ impl ImageStorageService {
         let response = request.send()?;
 
         if response.status().is_success() {
+            println!("[ImageStorage] --> OK");
             return Ok(());
         }
 
-        Err(ServiceError::from(response.status().to_string()))
+        let error = ServiceError::from(response.status().to_string());
+        println!("[ERROR] {}", error);
+        Err(error)
     }
 }
 

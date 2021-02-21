@@ -41,10 +41,10 @@ impl From<String> for ServiceError {
 impl std::fmt::Display for ServiceError{
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            ServiceError::BasicError(error_message) => write!(f, "[ERROR] {}", error_message),
-            ServiceError::RequestError(error) => write!(f, "[ERROR] {}", error.to_string()),
-            ServiceError::IOError(error) => write!(f, "[ERROR] {}", error.to_string()),
-            ServiceError::EncodingError(error) => write!(f, "[ERROR] {}", error.to_string())
+            ServiceError::BasicError(error_message) => write!(f, "{}", error_message),
+            ServiceError::RequestError(error) => write!(f, "{}", error.to_string()),
+            ServiceError::IOError(error) => write!(f, "{}", error.to_string()),
+            ServiceError::EncodingError(error) => write!(f, "{}", error.to_string())
         }
     }
 }
