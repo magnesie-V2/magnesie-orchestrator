@@ -9,11 +9,13 @@ use services::{PhotogrammetryService, ImageStorageService, ServicesKeeper, Servi
 use jobs_buffer::{JobsBuffer};
 use orchestrator::*;
 use clusters::ClustersManager;
+use crate::clusters::LocalPhotogrammetry;
 
 fn main() -> Result<(), String>{
     let services_keeper = Arc::new(RwLock::new(ServicesKeeper::new()));
     let jobs_buffer = Arc::new(RwLock::new(JobsBuffer::new()));
-    let clusters_manager = Arc::new(ClustersManager::new());
+    let mut clusters_manager = Arc::new(RwLock::new(ClustersManager::new()));
+    add_clusters(&clusters_manager);
 
     // image storage
     let image_storage_service = ImageStorageService::new(services_keeper.clone())?;
@@ -31,6 +33,7 @@ fn main() -> Result<(), String>{
     let orchestrator = Orchestrator::new(
         10,
         0, // set to 0 to avoid blocking the jos workflow for nothing until Cluster.get_green_energy_produced() is implemented for a cluster
+        services_keeper.clone(),
         jobs_buffer.clone(),
         clusters_manager.clone(),
         image_storage_service.clone(),
@@ -39,4 +42,8 @@ fn main() -> Result<(), String>{
     orchestrator.start();
 
     Ok(())
+}
+
+fn add_clusters(clusters_manager: &Arc<RwLock<ClustersManager>>){
+    clusters_manager.write().unwrap().add_cluster(Box::new(LocalPhotogrammetry));
 }

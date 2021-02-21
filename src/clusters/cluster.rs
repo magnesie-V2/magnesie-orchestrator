@@ -6,7 +6,7 @@ pub trait Cluster {
         None
     }
 
-    fn deploy(&self) -> Result<ServiceAccessInformation, ClusterError> {
+    fn deploy_photogrammetry_service(&self) -> Result<ServiceAccessInformation, ClusterError> {
         Err(ClusterError::from("Cluster deployment not implemented"))
     }
 
@@ -31,14 +31,14 @@ mod test {
     }
 
     #[test]
-    fn test_deploy() {
+    fn test_deploy_photogrammetry_service() {
         let test_cluster = TestCluster;
-        let deploy_result = test_cluster.deploy();
+        let deploy_result = test_cluster.deploy_photogrammetry_service();
 
         assert_eq!(true, deploy_result.is_err());
 
         let error_message = deploy_result.err().unwrap().to_string(); // unwrap is safe because the previous line ensures this the result is an error
 
-        assert_eq!("[ERROR] Cluster deployment not implemented", error_message);
+        assert_eq!("Cluster deployment not implemented", error_message);
     }
 }

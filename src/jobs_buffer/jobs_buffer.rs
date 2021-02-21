@@ -61,18 +61,19 @@ impl JobsBuffer {
     }
 
     pub fn get_pending_jobs(&mut self) -> Option<Vec<&mut BufferedJob>>{
-        let mut jobs_to_run = Vec::new();
+        let mut pending_jobs = Vec::new();
 
         for job in self.jobs.iter_mut(){
             if job.id.is_none() {
-                jobs_to_run.push(job)
+                pending_jobs.push(job)
             }
         }
 
-        if jobs_to_run.is_empty() {
+        if pending_jobs.is_empty() {
             return None;
         }
-        Some(jobs_to_run)
+
+        Some(pending_jobs)
     }
 
     pub fn submission_exists(&self, job: &BufferedJob) -> bool {
@@ -94,6 +95,17 @@ impl JobsBuffer {
     /// Returns true if the buffer has jobs waiting to be processed
     pub fn has_buffered_jobs(&self) -> bool {
         self.jobs.len() > 0
+    }
+
+    pub fn set_job_id(&mut self, submission_id: &i32, id: &str) -> Result<(), BufferError>{
+        for job in self.jobs.iter_mut(){
+            if job.submission_id == *submission_id {
+                job.id = Some(id.to_string());
+                return Ok(());
+            }
+        }
+
+        Err(BufferError::from("This submmission is not currently in the buffer"))
     }
 }
 

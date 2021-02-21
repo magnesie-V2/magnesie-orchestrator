@@ -26,6 +26,10 @@ impl BufferedJob{
             submission_date
         }
     }
+
+    pub fn get_complexity(&self) -> f32 {
+        self.photos.len() as f32
+    }
 }
 
 impl ToString for BufferedJob {
