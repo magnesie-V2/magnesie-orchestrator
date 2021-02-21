@@ -1,34 +1,34 @@
 /// This enum represents every type of error that a cluster can throw
-pub enum ClusterError{
+pub enum BufferError{
     /// Basic error containing only a string
     BasicError(String),
 }
 
-impl From<&str> for ClusterError {
+impl From<&str> for BufferError {
     fn from(error_message: &str) -> Self {
-        ClusterError::BasicError(error_message.to_string())
+        BufferError::BasicError(error_message.to_string())
     }
 }
 
-impl From<String> for ClusterError {
+impl From<String> for BufferError {
     fn from(error_message: String) -> Self {
-        ClusterError::BasicError(error_message)
+        BufferError::BasicError(error_message)
     }
 }
 
 /// Implementing the Display trait to make the error printable
-impl std::fmt::Display for ClusterError{
+impl std::fmt::Display for BufferError{
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            ClusterError::BasicError(error_message) => write!(f, "{}", error_message),
+            BufferError::BasicError(error_message) => write!(f, "{}", error_message),
         }
     }
 }
 
-impl From<ClusterError> for String {
-    fn from(err: ClusterError) -> Self {
+impl From<BufferError> for String {
+    fn from(err: BufferError) -> Self {
         match err {
-            ClusterError::BasicError(err) => err,
+            BufferError::BasicError(err) => err,
         }
     }
 }

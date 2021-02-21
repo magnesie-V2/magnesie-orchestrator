@@ -61,24 +61,6 @@ impl PhotogrammetryService {
         Ok(service)
     }
 
-    /// Sends a job creation requests and asks for information about it
-    pub fn test(&self) -> Result<bool, ServiceError>{
-        let mock_photos = [
-            "photo1.jpeg",
-            "photo2.jpeg",
-            "photo3.jpeg"
-        ].to_vec();
-        let photogrammetry_callback = "/photogrammetry/<id>";
-
-        let id = self.create_job(&mock_photos, photogrammetry_callback)?;
-        println!("Created job of id: {}", id);
-
-        let job = self.get_job(id.as_str())?;
-        println!("Job of id {} is currently: {}", job.id.unwrap(), job.status.unwrap());
-
-        Ok(true) // No error thrown so the test returns true
-    }
-
     /// Sends pictures urls to the photogrammetry webservice and returns the id of the created job
     pub fn create_job(&self, images_urls: &[&str], callback_url: &str) -> Result<String, ServiceError> {
         println!("[Photogrammetry] Creating a job from {} photos", images_urls.len());
@@ -98,10 +80,11 @@ impl PhotogrammetryService {
         let response = request.send()?;
         let response_body: PhotogrammetryJob = response.json()?;
 
-        match response_body.id {
-            None => Err(ServiceError::from("The id field wasn't found in the response body")),
-            Some(id) => Ok(id)
+        if let Some(id) = response_body.id {
+            return Ok(id);
         }
+
+        Err(ServiceError::from("The id field wasn't found in the response body"))
     }
 
     /// Retrieves information about a job based on its id
@@ -218,6 +201,24 @@ impl PhotogrammetryService {
             }
             Err(_) => {Err(ServiceError::from("This job has no result"))}
         }
+    }
+
+    /// Sends a job creation requests and asks for information about it
+    pub fn test(&self) -> Result<bool, ServiceError>{
+        let mock_photos = [
+            "photo1.jpeg",
+            "photo2.jpeg",
+            "photo3.jpeg"
+        ].to_vec();
+        let photogrammetry_callback = "/photogrammetry/<id>";
+
+        let id = self.create_job(&mock_photos, photogrammetry_callback)?;
+        println!("Created job of id: {}", id);
+
+        let job = self.get_job(id.as_str())?;
+        println!("Job of id {} is currently: {}", job.id.unwrap(), job.status.unwrap());
+
+        Ok(true) // No error thrown so the test returns true
     }
 }
 

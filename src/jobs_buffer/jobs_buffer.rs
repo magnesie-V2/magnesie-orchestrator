@@ -1,4 +1,5 @@
 use super::BufferedJob;
+use crate::jobs_buffer::BufferError;
 
 /// Keeps a list of BufferedJob and handles adding to/retrieving from the list <br /> <br />
 /// add_job() <br /> remove_job() <br /> get_job() <br /> has_buffered_jobs()
@@ -13,18 +14,19 @@ impl JobsBuffer {
         }
     }
 
-    pub fn add_job(&mut self, job: BufferedJob) {
-        println!("[JobsBuffer] Adding job {}", job.to_string());
-        if !self.submission_exists(&job) {
-            self.jobs.push(job);
-            println!("[JobsBuffer] --> OK");
-        } else {
-            println!("[ERROR] A job with submission_id={} already exists", job.submission_id);
+    pub fn add_job(&mut self, job: BufferedJob) -> Result<(), BufferError> {
+        if self.submission_exists(&job) {
+            return Err(BufferError::from("A job with this submission_id already exists in the buffer"));
         }
+        if self.job_exists(&job) {
+            return Err(BufferError::from("A job with this id already exists in the buffer"));
+        }
+
+        self.jobs.push(job);
+        Ok(())
     }
 
-    pub fn remove_job(&mut self, id: &str){
-        println!("[JobsBuffer] Removing job of id {}", id);
+    pub fn remove_job(&mut self, id: &str) -> Result<(), BufferError>{
         let index = self.jobs.iter().position(|job| {
             match &job.id {
                 Some(current_id) => current_id == id,
@@ -32,15 +34,12 @@ impl JobsBuffer {
             }
         });
 
-        match index {
-            Some(i) => {
-                self.jobs.remove(i);
-                println!("[JobsBuffer] --> OK");
-            },
-            None => {
-                println!("[ERROR] No job with id {} currently in the buffer", id);
-            }
-        };
+        if let Some(i) = index {
+            self.jobs.remove(i);
+            return Ok(());
+        }
+
+        Err(BufferError::from("This job is not currently in the buffer"))
     }
 
     pub fn get_job_by_id(&mut self, id: &str) -> Option<&mut BufferedJob> {
@@ -61,7 +60,7 @@ impl JobsBuffer {
         }
     }
 
-    pub fn get_jobs_to_run(&mut self) -> Vec<&mut BufferedJob>{
+    pub fn get_pending_jobs(&mut self) -> Option<Vec<&mut BufferedJob>>{
         let mut jobs_to_run = Vec::new();
 
         for job in self.jobs.iter_mut(){
@@ -70,13 +69,26 @@ impl JobsBuffer {
             }
         }
 
-        jobs_to_run
+        if jobs_to_run.is_empty() {
+            return None;
+        }
+        Some(jobs_to_run)
     }
 
-    pub fn submission_exists(&self, submission: &BufferedJob) -> bool {
+    pub fn submission_exists(&self, job: &BufferedJob) -> bool {
         let jobs = &self.jobs;
 
-        jobs.iter().any(|j| j.submission_id == submission.submission_id)
+        jobs.iter().any(|j| j.submission_id == job.submission_id)
+    }
+
+    pub fn job_exists(&self, job: &BufferedJob) -> bool {
+        let jobs = &self.jobs;
+
+        if job.id.is_none() {
+            return false;
+        }
+
+        jobs.iter().any(|j| j.id == job.id)
     }
 
     /// Returns true if the buffer has jobs waiting to be processed
@@ -184,6 +196,18 @@ pub mod tests{
         buffer.add_job(j1);
 
         let j1 = BufferedJob::new(&Some("azer"), &Vec::new(), &1, SystemTime::now());
+        assert_eq!(true, buffer.submission_exists(&j1));
+    }
+
+    #[test]
+    pub fn test_job_exists(){
+        let mut buffer = JobsBuffer::new();
+        let j1 = BufferedJob::new(&Some("azer"), &Vec::new(), &1, SystemTime::now());
+
+        assert_eq!(false, buffer.submission_exists(&j1));
+        buffer.add_job(j1);
+
+        let j1 = BufferedJob::new(&Some("azer"), &Vec::new(), &2, SystemTime::now());
         assert_eq!(true, buffer.submission_exists(&j1));
     }
 }

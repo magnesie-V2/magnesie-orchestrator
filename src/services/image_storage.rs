@@ -40,7 +40,6 @@ impl ImageStorageService {
     }
 
     pub fn get_new_submissions(&self) -> Result<Vec<Submission>, ServiceError> {
-        println!("[ImageStorage] Fetching new submissions from the service");
         let access_information = self.get_access_information()?;
 
         let request_url = format!("http://{host}:{port}/new_submissions",
@@ -52,12 +51,10 @@ impl ImageStorageService {
         let response = request.send()?;
         let response_body: Vec<Submission> = response.json()?;
 
-        println!("[ImageStorage] --> OK ({} found)", response_body.len());
         Ok(response_body)
     }
 
     pub fn change_submission_status(&self, id: &i32, status: &str) -> Result<(), ServiceError> {
-        println!("[ImageStorage] Changing status of submission {} to {}", id, status);
         let access_information = self.get_access_information()?;
 
         let request_url = format!("http://{host}:{port}/change_submission_status",
@@ -73,13 +70,10 @@ impl ImageStorageService {
         let response = request.send()?;
 
         if response.status().is_success() {
-            println!("[ImageStorage] --> OK");
             return Ok(());
         }
 
-        let error = ServiceError::from(response.status().to_string());
-        println!("[ERROR] {}", error);
-        Err(error)
+        Err(ServiceError::from(response.status().to_string()))
     }
 }
 
