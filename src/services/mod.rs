@@ -13,3 +13,6 @@ pub use photogrammetry::*;
 pub mod image_storage;
 pub use image_storage::*;
 
+pub mod result_storage;
+pub use result_storage::*;
+

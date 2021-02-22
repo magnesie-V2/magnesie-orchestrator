@@ -138,7 +138,7 @@ impl Orchestrator {
     }
 
     fn run_jobs(&self, jobs: &mut[&mut BufferedJob]) -> Result<(), String>{
-        log("Orchestrator", &format!("[Orchestrator] Sending {} job(s) to the photogrammetry service", jobs.len()));
+        log("Orchestrator", &format!("Sending {} job(s) to the photogrammetry service", jobs.len()));
         for job in jobs.iter_mut(){
 
             log("Photogrammetry", &format!("Creating a job from {} photos", job.photos.len()));

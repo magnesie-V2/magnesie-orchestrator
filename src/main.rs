@@ -32,6 +32,15 @@ fn main() -> Result<(), String>{
     // photogrammetry
     let photogrammetry_service = PhotogrammetryService::new(services_keeper.clone())?;
 
+    // result storage
+    let output_access_info = ServiceAccessInformation::new(
+        "localhost",
+        7881,
+        "",
+        "",
+    );
+    services_keeper.write().unwrap().register_service("result storage", output_access_info);
+
     let orchestrator = Orchestrator::new(
         10,
         0, // set to 0 to avoid blocking the jos workflow for nothing until Cluster.get_green_energy_produced() is implemented for a cluster
