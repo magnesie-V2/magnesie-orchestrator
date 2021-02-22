@@ -8,6 +8,8 @@ use crate::clusters::{ClustersManager, Cluster};
 use std::time::SystemTime;
 use chrono::{DateTime, FixedOffset, ParseError, offset::Utc, NaiveDate, NaiveDateTime};
 
+use crate::{log, log_error};
+
 const COMPLEXITY_CONSTANT: f32 = 1f32; // TODO define
 
 pub struct Orchestrator{
@@ -41,7 +43,8 @@ impl Orchestrator {
     }
 
     pub fn start(&self){
-        loop {
+        log("Orchestrator", "Starting");
+        //loop {
             self.add_submissions_to_buffer();
 
             let mut buffer = self.jobs_buffer.write().unwrap();
@@ -50,10 +53,10 @@ impl Orchestrator {
                 if let Some(jobs) = buffer.get_pending_jobs(){
                     let mut jobs = jobs;
 
-                    println!("[Orchestrator] Selecting cluster");
+                    log("Orchestrator", "Selecting cluster");
                     if let Some(selected_cluster) = self.clusters_manager.read().unwrap().select_cluster() {
 
-                        println!("[Orchestrator] Deploying photogrammetry service");
+                        log("Orchestrator", "Deploying photogrammetry service");
                         if let Ok(sai) = selected_cluster.deploy_photogrammetry_service() {
                             {
                                 let mut sk = self.services_keeper.write().unwrap();
@@ -71,44 +74,40 @@ impl Orchestrator {
                 }
             }
             thread::sleep(time::Duration::from_secs(self.ticks_delay.clone()));
-        }
+        //}
+        loop{}
     }
 
     fn add_submissions_to_buffer(&self) -> Result<(), String>{
-        println!("[ImageStorage] Fetching new submissions from the service");
+        log("ImageStorage", "Fetching new submissions from the service");
         let get_new_submissions_result = self.image_storage.get_new_submissions();
 
-        if let Err(err) = get_new_submissions_result {
-            println!("[ERROR] {}", err.to_string());
-            return Err(err.to_string());
+        if let Err(er) = get_new_submissions_result {
+            log_error(&er.to_string());
+            return Err(er.to_string());
         }
 
         let new_submissions = get_new_submissions_result.ok().unwrap();
-        println!("[ImageStorage] --> OK ({} found)", new_submissions.len());
 
         let mut buffer = self.jobs_buffer.write().unwrap();
 
         for s in new_submissions.into_iter() {
-            println!("[Orchestrator] Parsing datetime of submission {}", s.id);
             let photos: Vec<&str> = s.photos.iter().map(|s| s as &str).collect();
             let submission_time = DateTime::parse_from_str(&s.submission_date, "%Y-%m-%dT%H:%M:%S%.3f%z");
 
             match submission_time {
                 Ok(s_time) => {
-                    println!("[Orchestrator] --> OK");
                     let job = BufferedJob::new(&None, &photos, &s.id, SystemTime::from(s_time));
                     if let false = buffer.submission_exists(&job) {
-                        println!("[JobsBuffer] Adding job {}", job.to_string());
+                        log("JobsBuffer", &format!("Adding job {}", job.to_string()));
 
                         if let Err(er) = buffer.add_job(job) {
-                            println!("[ERROR] {}", er);
-                        } else {
-                            println!("[JobsBuffer] --> OK");
+                            log_error(&er.to_string());
                         }
                     }
                 }
                 Err(er) => {
-                    println!("[ERROR] Unable to parse datetime of submission {} ({}). Make sure the datetime follows the same pattern as 2021-01-17T14:32:14.184+0001", s.id, er.to_string());
+                    log_error(&format!("[ERROR] Unable to parse datetime of submission {} ({}). Make sure the datetime follows the same pattern as 2021-01-17T14:32:14.184+0001", s.id, er.to_string()));
                 }
             }
         }
@@ -118,7 +117,7 @@ impl Orchestrator {
 
     // Todo : choose jobs based on complexity (job.get_complexity()) and available energy
     fn select_jobs_to_run<'a>(&self, jobs: &'a mut[&'a mut BufferedJob], available_energy: &'a Option<f32>) -> Option<Vec<&'a mut BufferedJob>> {
-        println!("[Orchestrator] Selecting jobs to run");
+        log("Orchestrator", "Selecting jobs to run");
         let mut jobs_to_run = Vec::new();
         let mut total_complexity = 0f32;
 
@@ -139,20 +138,20 @@ impl Orchestrator {
     }
 
     fn run_jobs(&self, jobs: &mut[&mut BufferedJob]) -> Result<(), String>{
-        println!("[Orchestrator] Sending {} job(s) to the photogrammetry service", jobs.len());
+        log("Orchestrator", &format!("[Orchestrator] Sending {} job(s) to the photogrammetry service", jobs.len()));
         for job in jobs.iter_mut(){
 
-            println!("[Photogrammetry] Creating a job from {} photo(s)", job.photos.len());
+            log("Photogrammetry", &format!("Creating a job from {} photos", job.photos.len()));
             let job_id = self.photogrammetry.create_job(&job.photos, "/photogrammetry");
             let submission_id = job.submission_id;
 
             match job_id{
                 Ok(id) => {
                     (**job).id = Some(id.clone());
-                    println!("Created job {} from submission {}", id, job.submission_id);
+                    log("Photogrammetry", &format!("Created job {} from submission {}", id, job.submission_id));
                 },
                 Err(er) => {
-                    println!("[ERROR] {}", er);
+                    log_error(&er.to_string());
                 }
             }
         }

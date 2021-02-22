@@ -10,6 +10,8 @@ use jobs_buffer::{JobsBuffer};
 use orchestrator::*;
 use clusters::ClustersManager;
 use crate::clusters::LocalPhotogrammetry;
+use std::time::SystemTime;
+use chrono::{DateTime, Utc};
 
 fn main() -> Result<(), String>{
     let services_keeper = Arc::new(RwLock::new(ServicesKeeper::new()));
@@ -46,4 +48,20 @@ fn main() -> Result<(), String>{
 
 fn add_clusters(clusters_manager: &Arc<RwLock<ClustersManager>>){
     clusters_manager.write().unwrap().add_cluster(Box::new(LocalPhotogrammetry));
+}
+
+pub fn log(component: &str, message: &str){
+    let system_time = SystemTime::now();
+    let datetime: DateTime<Utc> = system_time.into();
+    let formatted_datetime = datetime.format("%d/%m/%Y %T");
+
+    println!("[{}][{}] {}", formatted_datetime, component, message);
+}
+
+pub fn log_error(message: &str) {
+    let system_time = SystemTime::now();
+    let datetime: DateTime<Utc> = system_time.into();
+    let formatted_datetime = datetime.format("%d/%m/%Y %T");
+
+    println!("[{}][ERROR] {}", formatted_datetime, message);
 }

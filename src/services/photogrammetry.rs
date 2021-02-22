@@ -193,7 +193,7 @@ impl PhotogrammetryService {
         match result_url {
             Ok(result_url) => {
                 // TODO decide what to do with the job result's url
-                println!("Job result url: {}", result_url);
+                crate::log("Photogrammetry", &format!("Job result url: {}", result_url));
                 Ok(())
             }
             Err(_) => {Err(ServiceError::from("This job has no result"))}

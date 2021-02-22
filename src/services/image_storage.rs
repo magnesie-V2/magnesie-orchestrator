@@ -51,6 +51,8 @@ impl ImageStorageService {
         let response = request.send()?;
         let response_body: Vec<Submission> = response.json()?;
 
+
+
         Ok(response_body)
     }
 
