@@ -116,6 +116,28 @@ impl Orchestrator {
         Ok(())
     }
 
+    // Todo : choose jobs based on complexity (job.get_complexity()) and available energy
+    fn select_jobs_to_run<'a>(&self, jobs: &'a mut[&'a mut BufferedJob], available_energy: &'a Option<f32>) -> Option<Vec<&'a mut BufferedJob>> {
+        println!("[Orchestrator] Selecting jobs to run");
+        let mut jobs_to_run = Vec::new();
+        let mut total_complexity = 0f32;
+
+
+        for job in jobs.iter_mut() {
+            let job_complexity = job.get_complexity();
+
+            if available_energy.is_some() && total_complexity + job_complexity < available_energy.unwrap() * COMPLEXITY_CONSTANT {
+                total_complexity += job_complexity;
+                jobs_to_run.push(&mut(**job));
+            } else if true { // TODO: timeout handling
+                total_complexity += job_complexity;
+                jobs_to_run.push(&mut (**job));
+            }
+        }
+
+        return Some(jobs_to_run);
+    }
+
     fn run_jobs(&self, jobs: &mut[&mut BufferedJob]) -> Result<(), String>{
         println!("[Orchestrator] Sending {} job(s) to the photogrammetry service", jobs.len());
         for job in jobs.iter_mut(){
@@ -136,28 +158,6 @@ impl Orchestrator {
         }
 
         Ok(())
-    }
-
-    // Todo : choose jobs based on complexity (job.get_complexity()) and available energy
-    pub fn select_jobs_to_run<'a>(&self, jobs: &'a mut[&'a mut BufferedJob], available_energy: &'a Option<f32>) -> Option<Vec<&'a mut BufferedJob>> {
-        println!("[Orchestrator] Selecting jobs to run");
-            let mut jobs_to_run = Vec::new();
-            let mut total_complexity = 0f32;
-
-
-            for job in jobs.iter_mut() {
-                let job_complexity = job.get_complexity();
-
-                if available_energy.is_some() && total_complexity + job_complexity < available_energy.unwrap() * COMPLEXITY_CONSTANT {
-                    total_complexity += job_complexity;
-                    jobs_to_run.push(&mut(**job));
-                } else if true { // TODO: timeout handling
-                    total_complexity += job_complexity;
-                    jobs_to_run.push(&mut (**job));
-                }
-            }
-
-            return Some(jobs_to_run);
     }
 }
 
