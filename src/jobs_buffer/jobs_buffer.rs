@@ -1,5 +1,6 @@
 use super::BufferedJob;
 use crate::jobs_buffer::BufferError;
+use std::time::SystemTime;
 
 /// Keeps a list of BufferedJob and handles adding to/retrieving from the list <br /> <br />
 /// add_job() <br /> remove_job() <br /> get_job() <br /> has_buffered_jobs()
@@ -103,6 +104,17 @@ impl JobsBuffer {
     /// Returns true if the buffer has jobs waiting to be processed
     pub fn has_buffered_jobs(&self) -> bool {
         self.jobs.len() > 0
+    }
+
+    pub fn check_timeouts(&mut self) {
+        for job in self.jobs.iter_mut(){
+            if let Ok(added_since) = SystemTime::now().duration_since(job.submission_date){
+                if job.id.is_some() && added_since.as_secs() >= 21600 {
+                    job.id = None;
+                    job.submission_date = SystemTime::now();
+                }
+            }
+        }
     }
 }
 
