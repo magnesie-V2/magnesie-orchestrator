@@ -2,22 +2,43 @@ mod services;
 mod jobs_buffer;
 mod orchestrator;
 mod clusters;
+mod ssh_client;
+mod meteo_service;
 
 use std::sync::{Arc, RwLock};
 
 use services::{PhotogrammetryService, ImageStorageService, ServicesKeeper, ServiceAccessInformation};
 use jobs_buffer::{JobsBuffer};
 use orchestrator::*;
+use clusters::Cluster;
 use clusters::ClustersManager;
-use crate::clusters::LocalPhotogrammetry;
+use clusters::LocalPhotogrammetry;
+use clusters::Grid5000;
 use std::time::SystemTime;
+use std::env;
 use chrono::{DateTime, Utc};
 
 fn main() -> Result<(), String>{
+
+    let args: Vec<String> = env::args().collect();
+
     let services_keeper = Arc::new(RwLock::new(ServicesKeeper::new()));
     let jobs_buffer = Arc::new(RwLock::new(JobsBuffer::new()));
     let mut clusters_manager = Arc::new(RwLock::new(ClustersManager::new()));
-    add_clusters(&clusters_manager);
+    
+    
+    if args.len() > 1 {
+        log("Main", "Launch parameters found, adding Grid5000 cluster");
+        let username : &str = &args[1];
+        let password : &str = &args[2];
+        let site : &str = &args[3];
+        let walltime : &str = &args[4];
+        add_grid5000_cluster(&clusters_manager, username, password, site, walltime);
+    }
+    else {
+        add_clusters(&clusters_manager);
+    }
+
 
     // image storage
     let image_storage_service = ImageStorageService::new(services_keeper.clone())?;
@@ -56,7 +77,21 @@ fn main() -> Result<(), String>{
 }
 
 fn add_clusters(clusters_manager: &Arc<RwLock<ClustersManager>>){
-    clusters_manager.write().unwrap().add_cluster(Box::new(LocalPhotogrammetry));
+
+    let mut cm_lock = clusters_manager.write().unwrap();
+    cm_lock.add_cluster(Box::new(LocalPhotogrammetry));
+}
+
+fn add_grid5000_cluster(clusters_manager: &Arc<RwLock<ClustersManager>>, username : &str, password : &str, site : &str, walltime : &str){
+
+    let mut cm_lock = clusters_manager.write().unwrap();
+    
+    let grid5000_cluster  = Grid5000::new(String::from(username),
+    String::from(password),
+    String::from(site),
+    String::from(walltime));
+    
+    cm_lock.add_cluster(Box::new(grid5000_cluster));
 }
 
 pub fn log(component: &str, message: &str){

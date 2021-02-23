@@ -1,5 +1,5 @@
 use crate::services::ServiceAccessInformation;
-use crate::clusters::ClusterError;
+use crate::clusters::cluster_error::ClusterError;
 
 pub trait Cluster {
     fn get_green_energy_produced(&self) -> Option<f32> {
@@ -10,7 +10,7 @@ pub trait Cluster {
         Err(ClusterError::from("Cluster deployment not implemented"))
     }
 
-    fn make_reservation(self) -> String;
+    fn make_reservation(&self) -> String;
 }
 
 #[cfg(test)]

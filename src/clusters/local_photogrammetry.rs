@@ -1,4 +1,5 @@
-use crate::clusters::{Cluster, ClusterError};
+use crate::clusters::cluster::Cluster;
+use crate::clusters::cluster_error::ClusterError;
 use crate::services::ServiceAccessInformation;
 
 pub struct LocalPhotogrammetry;
@@ -13,7 +14,7 @@ impl Cluster for LocalPhotogrammetry{
         ))
     }
 
-    fn make_reservation(self) -> String {
+    fn make_reservation(&self) -> String {
         "".to_string()
     }
 }
