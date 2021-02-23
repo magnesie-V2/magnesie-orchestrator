@@ -10,7 +10,16 @@ pub trait Cluster {
         Err(ClusterError::from("Cluster deployment not implemented"))
     }
 
+    fn get_reservation_status(&self) -> Option<ReservationStatus>;
+
+    fn get_access_information(&self) -> Option<ServiceAccessInformation>;
+
     fn make_reservation(self) -> String;
+}
+
+pub enum ReservationStatus{
+    ResourcesAvailable,
+    PendingReservation,
 }
 
 #[cfg(test)]
@@ -19,6 +28,14 @@ mod test {
 
     struct TestCluster;
     impl Cluster for TestCluster {
+        fn get_reservation_status(&self) -> Option<ReservationStatus> {
+            None
+        }
+
+        fn get_access_information(&self) -> ServiceAccessInformation {
+            unimplemented!()
+        }
+
         fn make_reservation(self) -> String{
             unimplemented!();
         }
