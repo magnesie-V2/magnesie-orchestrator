@@ -3,8 +3,12 @@
 extern crate reqwest;
 extern crate serde;
 
-pub mod grid5000_client_struct;
+use super::grid5000_struct::*;
+use crate::ssh_client::SshClient;
+use crate::meteo_service::MeteoClient;
 
+use crate::clusters::{Cluster, ClusterError, ReservationStatus};
+use crate::services::ServiceAccessInformation;
 
 #[allow(unused_imports)]
 use std::{env, 
@@ -18,13 +22,9 @@ use std::{env,
 
 use chrono::{Timelike, Utc};
 
-use grid5000_client_struct::*;
-
 use rand::Rng;
 
 #[allow(unused_imports)]
-use crate::ssh_client::SshClient;
-use crate::meteo_service::MeteoClient;
 
 pub struct Grid5000 {
     api_base_url: &'static str,
@@ -36,7 +36,9 @@ pub struct Grid5000 {
     site : String,
     nb_nodes : String,
     walltime : String,
-    ssh_key_path : String
+    ssh_key_path : String,
+    reserved_node_address: String,
+    uid : String
 }
 
 impl Grid5000 {
@@ -49,7 +51,7 @@ impl Grid5000 {
         ssh_key_path : le chemin vers la clé publique à utilsier pour la réservation. 
     */
     #[allow(dead_code)]
-    pub fn new(username: String, password: String, site: String, walltime: String, ssh_key_path: String) -> Grid5000 {
+    pub fn new(username: String, password: String, site: String, walltime: String) -> Grid5000 {
         Grid5000 {
             api_base_url: "https://api.grid5000.fr/3.0/sites/",
             deploy_url: "/deployments/",
@@ -60,12 +62,14 @@ impl Grid5000 {
             site,
             nb_nodes : String::from("1"),
             walltime,
-            ssh_key_path
+            ssh_key_path : String::from("config/orchestrateur_key.pub"),
+            reserved_node_address : String::from(""),
+            uid : String::from(""),
         }
     }
 
     #[allow(dead_code)]
-    pub fn new_random_site(username: String, password: String, walltime: String, ssh_key_path: String) -> Grid5000 {
+    pub fn new_random_site(username: String, password: String, walltime: String) -> Grid5000 {
         
         let mut ret = Grid5000 {
             api_base_url: "https://api.grid5000.fr/3.0/sites/",
@@ -77,7 +81,9 @@ impl Grid5000 {
             password,
             nb_nodes : String::from("1"),
             walltime,
-            ssh_key_path
+            ssh_key_path : String::from("config/orchestrateur_key.pub"),
+            reserved_node_address : String::from(""),
+            uid : String::from(""),
         };
 
         ret.site = ret.choose_random_site_with_green_energy();
@@ -92,36 +98,6 @@ impl Grid5000 {
         return if minute % 2 == 0 { true } else { false };
     }
     
-    #[allow(dead_code)]
-    // Make a reservartio nand return the adress of the reserved node
-    pub fn make_reservation(&self) -> String {
-
-        let env : String = String::from("debian10-x64-min");
-
-        let ssh_key: String = self.get_ssh_key().unwrap();
-
-        // Reserve a node and get the resposne from API
-        let job_waiting: JobSubmitResponse =
-            self.reserve_node().unwrap();
-
-        // Check if the job's reservation is finished
-        let mut job_deployed: JobSubmitResponse =
-            self.get_reservation(job_waiting.uid.to_string()).unwrap();
-
-        while job_deployed.state != "running" {
-            job_deployed = self.get_reservation(job_waiting.uid.to_string()).unwrap();
-        }
-
-        // When job is reserved, deploy environment on node
-        let mut deploy_env_response : DeployEnvResponse = self.deploy_env_on_node(&job_deployed.assigned_nodes,env, ssh_key).unwrap();
-
-        while deploy_env_response.status != "terminated" && deploy_env_response.status != "error" && deploy_env_response.status != "canceled" {
-            deploy_env_response = self.get_deployment(deploy_env_response.uid).unwrap();
-        }
-
-        return job_deployed.assigned_nodes.remove(0);
-    }
-
     // Delete reservation of node with uid = job_uid
     #[allow(dead_code)]
     pub fn delete_reservation(&self, job_to_delete: String) -> Result<(), reqwest::Error> {
@@ -142,7 +118,7 @@ impl Grid5000 {
         Ok(())
     }
 
-    fn reserve_node(&self) -> Result<grid5000_client_struct::JobSubmitResponse, reqwest::Error> {
+    fn reserve_node(&self) -> Result<JobSubmitResponse, reqwest::Error> {
         let api_url = format!("{}{}{}", self.api_base_url, self.site, self.job_url_pretty);
 
         let mut deploy_option: Vec<String> = Vec::new();
@@ -171,6 +147,36 @@ impl Grid5000 {
         println!("");
 
         Ok(response_body)
+    }
+
+    #[allow(dead_code)]
+    // Make a reservartio nand return the adress of the reserved node
+    fn make_reservation(&mut self) -> String {
+
+        let env : String = String::from("debian10-x64-min");
+
+        let ssh_key: String = self.get_ssh_key().unwrap();
+
+        // Reserve a node and get the resposne from API
+        let job_waiting: JobSubmitResponse = self.reserve_node().unwrap();
+
+        self.uid = job_waiting.uid.to_string();
+
+        // Check if the job's reservation is finished
+        let mut job_deployed: JobSubmitResponse = self.get_reservation(self.uid.clone()).unwrap();
+
+        while job_deployed.state != "running" {
+            job_deployed = self.get_reservation(self.uid.clone()).unwrap();
+        }
+
+        // When job is reserved, deploy environment on node
+        let mut deploy_env_response : DeployEnvResponse = self.deploy_env_on_node(&job_deployed.assigned_nodes,env, ssh_key).unwrap();
+
+        while deploy_env_response.status != "terminated" && deploy_env_response.status != "error" && deploy_env_response.status != "canceled" {
+            deploy_env_response = self.get_deployment(deploy_env_response.uid).unwrap();
+        }
+
+        return job_deployed.assigned_nodes.remove(0);
     }
 
     // Check state of reservation with uid = job_uid
@@ -281,6 +287,55 @@ impl Grid5000 {
     }
 }
 
+impl Cluster for Grid5000 {
+
+    fn deploy_photogrammetry_service(&mut self) -> Result<ServiceAccessInformation, ClusterError> {
+        
+        self.reserved_node_address = self.make_reservation();
+
+        let node_username : String = String::from("root");
+    
+        let pub_key_path: PathBuf = PathBuf::from(&self.ssh_key_path);
+
+        let priv_key: PathBuf = PathBuf::from("config/orchestrateur_key.pem");
+        let ssh_client : SshClient = SshClient::new(self.reserved_node_address.clone(), node_username, pub_key_path, priv_key);
+
+        ssh_client.install_docker();
+        ssh_client.pull_photo_docker();
+        ssh_client.run_docker();
+        
+        Ok(ServiceAccessInformation::new(
+            &self.reserved_node_address,
+            7879,
+            &self.username,
+            &self.password
+        ))
+    }
+
+    fn get_access_information(&self) -> Option<ServiceAccessInformation> {
+        Some(ServiceAccessInformation::new(
+            &self.reserved_node_address,
+            7879,
+            &self.username,
+            &self.password
+        ))
+    }
+
+    fn get_reservation_status(&self) -> Option<ReservationStatus> {
+        let job_deployed: JobSubmitResponse = self.get_reservation(self.uid.clone()).unwrap();
+        if job_deployed.state == "waiting" || job_deployed.state == "launching" || job_deployed.state == "hold" {
+            return Some(ReservationStatus::Pending)
+        }
+        else if job_deployed.state == "running" {
+            return Some(ReservationStatus::ResourcesAvailable)
+        }
+        else {
+            return Some(ReservationStatus::Expired)
+        }
+    }
+
+}
+
 #[test]
 fn launch_grid5000_client() {
     
@@ -306,8 +361,7 @@ fn launch_grid5000_client() {
     let cluster = Grid5000::new(String::from(username),
                                 String::from(password),
                                 String::from(site),
-                                String::from(walltime),
-                                pub_key);
+                                String::from(walltime));
 
     println!("Attempting reservation on site {}", &cluster.site);
 

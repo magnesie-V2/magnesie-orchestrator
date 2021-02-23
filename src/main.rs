@@ -10,13 +10,11 @@ use std::sync::{Arc, RwLock};
 use services::{PhotogrammetryService, ImageStorageService, ServicesKeeper, ServiceAccessInformation};
 use jobs_buffer::{JobsBuffer};
 use orchestrator::*;
-use clusters::Cluster;
-use clusters::ClustersManager;
-use clusters::LocalPhotogrammetry;
-use clusters::Grid5000;
+use clusters::{ClustersManager, LocalPhotogrammetry, Grid5000};
 use std::time::SystemTime;
 use std::env;
 use chrono::{DateTime, Utc};
+use crate::services::ResultStorageService;
 
 fn main() -> Result<(), String>{
 
@@ -24,8 +22,7 @@ fn main() -> Result<(), String>{
 
     let services_keeper = Arc::new(RwLock::new(ServicesKeeper::new()));
     let jobs_buffer = Arc::new(RwLock::new(JobsBuffer::new()));
-    let mut clusters_manager = Arc::new(RwLock::new(ClustersManager::new()));
-    
+    let clusters_manager = Arc::new(RwLock::new(ClustersManager::new()));
     
     if args.len() > 1 {
         log("Main", "Launch parameters found, adding Grid5000 cluster");
@@ -54,6 +51,7 @@ fn main() -> Result<(), String>{
     let photogrammetry_service = PhotogrammetryService::new(services_keeper.clone())?;
 
     // result storage
+    let result_storage_service = ResultStorageService::new(services_keeper.clone())?;
     let output_access_info = ServiceAccessInformation::new(
         "localhost",
         7881,
@@ -64,34 +62,34 @@ fn main() -> Result<(), String>{
 
     let orchestrator = Orchestrator::new(
         10,
-        0, // set to 0 to avoid blocking the jos workflow for nothing until Cluster.get_green_energy_produced() is implemented for a cluster
+        300, // set to 0 to avoid blocking the jos workflow for nothing until Cluster.get_green_energy_produced() is implemented for a cluster
         services_keeper.clone(),
         jobs_buffer.clone(),
         clusters_manager.clone(),
-        image_storage_service.clone(),
-        photogrammetry_service.clone()
+        Arc::new(image_storage_service),
+        Arc::new(photogrammetry_service),
+        Arc::new(result_storage_service)
     );
-    orchestrator.start();
-
+    Orchestrator::start(Arc::new(orchestrator));
     Ok(())
 }
 
 fn add_clusters(clusters_manager: &Arc<RwLock<ClustersManager>>){
 
-    let mut cm_lock = clusters_manager.write().unwrap();
-    cm_lock.add_cluster(Box::new(LocalPhotogrammetry));
+    let mut cm_writer = clusters_manager.write().unwrap();
+    cm_writer.add_cluster(Box::new(LocalPhotogrammetry));
 }
 
 fn add_grid5000_cluster(clusters_manager: &Arc<RwLock<ClustersManager>>, username : &str, password : &str, site : &str, walltime : &str){
 
-    let mut cm_lock = clusters_manager.write().unwrap();
+    let mut cm_writer = clusters_manager.write().unwrap();
     
     let grid5000_cluster  = Grid5000::new(String::from(username),
     String::from(password),
     String::from(site),
     String::from(walltime));
     
-    cm_lock.add_cluster(Box::new(grid5000_cluster));
+    cm_writer.add_cluster(Box::new(grid5000_cluster));
 }
 
 pub fn log(component: &str, message: &str){
@@ -107,5 +105,5 @@ pub fn log_error(message: &str) {
     let datetime: DateTime<Utc> = system_time.into();
     let formatted_datetime = datetime.format("%d/%m/%Y %T");
 
-    println!("[{}][ERROR] {}", formatted_datetime, message);
+    eprintln!("[{}][ERROR] {}", formatted_datetime, message);
 }

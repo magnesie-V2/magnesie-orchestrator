@@ -3,14 +3,23 @@ use crate::clusters::cluster_error::ClusterError;
 
 pub trait Cluster {
     fn get_green_energy_produced(&self) -> Option<f32> {
-        None
+        None 
     }
+    
+    fn get_current_energy_consumption(&self) -> Option<f32> { None }
 
-    fn deploy_photogrammetry_service(&self) -> Result<ServiceAccessInformation, ClusterError> {
-        Err(ClusterError::from("Cluster deployment not implemented"))
-    }
+    fn deploy_photogrammetry_service(&mut self) -> Result<ServiceAccessInformation, ClusterError>;
 
-    fn make_reservation(&self) -> String;
+    fn get_reservation_status(&self) -> Option<ReservationStatus>;
+
+    fn get_access_information(&self) -> Option<ServiceAccessInformation>;
+
+}
+
+pub enum ReservationStatus{
+    ResourcesAvailable,
+    Pending,
+    Expired
 }
 
 #[cfg(test)]
@@ -19,6 +28,14 @@ mod test {
 
     struct TestCluster;
     impl Cluster for TestCluster {
+        fn get_reservation_status(&self) -> Option<ReservationStatus> {
+            None
+        }
+
+        fn get_access_information(&self) -> ServiceAccessInformation {
+            unimplemented!()
+        }
+
         fn make_reservation(self) -> String{
             unimplemented!();
         }
