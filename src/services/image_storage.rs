@@ -1,15 +1,10 @@
-use std::net::{TcpListener, TcpStream};
 use std::sync::{Arc, RwLock};
-
-use std::time::SystemTime;
-use chrono::offset::Utc;
-use chrono::DateTime;
 
 use reqwest::blocking::Client;
 use serde::Deserialize;
 use serde::Serialize;
 
-use super::{Service, ServicesKeeper, ServiceAccessInformation, ServiceError};
+use super::{Service, ServicesKeeper, ServiceError};
 
 #[derive(Deserialize, Debug)]
 pub struct Submission {
@@ -30,13 +25,11 @@ pub struct ImageStorageService {
 }
 
 impl ImageStorageService {
-    pub fn new(services_keeper: Arc<RwLock<ServicesKeeper>>) -> Result<Arc<ImageStorageService>, ServiceError>{
-        let service = Arc::new(ImageStorageService {
+    pub fn new(services_keeper: Arc<RwLock<ServicesKeeper>>) -> Result<ImageStorageService, ServiceError>{
+        Ok(ImageStorageService {
             services_keeper,
             client: reqwest::blocking::Client::new()
-        });
-
-        Ok(service)
+        })
     }
 
     pub fn get_new_submissions(&self) -> Result<Vec<Submission>, ServiceError> {
@@ -91,6 +84,7 @@ impl Service for ImageStorageService {
 
 #[test]
 pub fn test(){
+    use super::ServiceAccessInformation;
     let services_keeper = Arc::new(RwLock::new(ServicesKeeper::new()));
 
     let input_access_info = ServiceAccessInformation::new(
@@ -119,7 +113,7 @@ pub fn test(){
                 Err(error) => println!("{}", error)
             }
             match service.change_submission_status(&1, "Done") {
-                Ok(jobs) => {
+                Ok(_) => {
                     println!("Changed submission status");
                 }
                 Err(error) => println!("{}", error)

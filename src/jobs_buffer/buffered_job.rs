@@ -11,7 +11,7 @@ pub struct BufferedJob{
 }
 
 impl BufferedJob{
-    pub fn new(id: &Option<&str>, photos: &[&str], input_id: &i32, submission_date: SystemTime) -> BufferedJob {
+    pub fn new(id: &Option<&str>, photos: &[&str], submission_id: &i32, submission_date: SystemTime) -> BufferedJob {
         let id = match id {
             None => None,
             Some(id) => Some(id.to_string())
@@ -22,7 +22,7 @@ impl BufferedJob{
         BufferedJob {
             id,
             photos,
-            submission_id: input_id.clone(),
+            submission_id: submission_id.clone(),
             submission_date
         }
     }
@@ -38,8 +38,8 @@ impl ToString for BufferedJob {
         let formatted_buffered_time = format!("{}", datetime.format("%d/%m/%Y %T"));
 
         match &self.id {
-            Some(id) => format!("BufferedJob(id: {}, #photos: {}, request_id: {}, buffered_time: {})", id, self.photos.len(), self.submission_id, formatted_buffered_time),
-            None => format!("BufferedJob(id: None, #photos: {}, request_id: {}, buffered_time: {})", self.photos.len(), self.submission_id, formatted_buffered_time)
+            Some(id) => format!("BufferedJob(id: {}, #photos: {}, submission_id: {}, buffered_time: {})", id, self.photos.len(), self.submission_id, formatted_buffered_time),
+            None => format!("BufferedJob(id: None, #photos: {}, submission_id: {}, buffered_time: {})", self.photos.len(), self.submission_id, formatted_buffered_time)
         }
     }
 }
@@ -96,22 +96,22 @@ mod test{
         let buffered_job = BufferedJob::new(&no_id, &no_photos, &input_id, SystemTime::now());
         let datetime: DateTime<Utc> = buffered_job.submission_date.into();
         let formatted_buffered_time = format!("{}", datetime.format("%d/%m/%Y %T"));
-        assert_eq!(format!("BufferedJob(id: None, #photos: 0, request_id: 1, buffered_time: {})", formatted_buffered_time).to_string(), buffered_job.to_string());
+        assert_eq!(format!("BufferedJob(id: None, #photos: 0, submission_id: 1, buffered_time: {})", formatted_buffered_time).to_string(), buffered_job.to_string());
         // id, no photos
         let buffered_job = BufferedJob::new(&id, &no_photos, &input_id, SystemTime::now());
         let datetime: DateTime<Utc> = buffered_job.submission_date.into();
         let formatted_buffered_time = format!("{}", datetime.format("%d/%m/%Y %T"));
-        assert_eq!(format!("BufferedJob(id: id, #photos: 0, request_id: 1, buffered_time: {})", formatted_buffered_time).to_string(), buffered_job.to_string());
+        assert_eq!(format!("BufferedJob(id: id, #photos: 0, submission_id: 1, buffered_time: {})", formatted_buffered_time).to_string(), buffered_job.to_string());
         // no id, photos
         let buffered_job = BufferedJob::new(&no_id, &photos, &input_id, SystemTime::now());
         let datetime: DateTime<Utc> = buffered_job.submission_date.into();
         let formatted_buffered_time = format!("{}", datetime.format("%d/%m/%Y %T"));
-        assert_eq!(format!("BufferedJob(id: None, #photos: 3, request_id: 1, buffered_time: {})", formatted_buffered_time).to_string(), buffered_job.to_string());
+        assert_eq!(format!("BufferedJob(id: None, #photos: 3, submission_id: 1, buffered_time: {})", formatted_buffered_time).to_string(), buffered_job.to_string());
         // id, photos
         let buffered_job = BufferedJob::new(&id, &photos, &input_id, SystemTime::now());
         let datetime: DateTime<Utc> = buffered_job.submission_date.into();
         let formatted_buffered_time = format!("{}", datetime.format("%d/%m/%Y %T"));
-        assert_eq!(format!("BufferedJob(id: id, #photos: 3, request_id: 1, buffered_time: {})", formatted_buffered_time).to_string(), buffered_job.to_string());
+        assert_eq!(format!("BufferedJob(id: id, #photos: 3, submission_id: 1, buffered_time: {})", formatted_buffered_time).to_string(), buffered_job.to_string());
     }
 }
 

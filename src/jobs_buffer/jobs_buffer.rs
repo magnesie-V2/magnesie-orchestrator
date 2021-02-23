@@ -78,8 +78,9 @@ impl JobsBuffer {
 
     pub fn submission_exists(&self, job: &BufferedJob) -> bool {
         let jobs = &self.jobs;
-
-        jobs.iter().any(|j| j.submission_id == job.submission_id)
+        jobs.iter().any(|j| {
+            j.submission_id == job.submission_id
+        })
     }
 
     pub fn job_exists(&self, job: &BufferedJob) -> bool {
@@ -88,24 +89,20 @@ impl JobsBuffer {
         if job.id.is_none() {
             return false;
         }
+        let job_id = job.id.clone().unwrap();
 
-        jobs.iter().any(|j| j.id == job.id)
+        jobs.iter().any(|j| {
+            if let Some(id) = &j.id{
+                id.clone() == job_id
+            } else {
+                false
+            }
+        })
     }
 
     /// Returns true if the buffer has jobs waiting to be processed
     pub fn has_buffered_jobs(&self) -> bool {
         self.jobs.len() > 0
-    }
-
-    pub fn set_job_id(&mut self, submission_id: &i32, id: &str) -> Result<(), BufferError>{
-        for job in self.jobs.iter_mut(){
-            if job.submission_id == *submission_id {
-                job.id = Some(id.to_string());
-                return Ok(());
-            }
-        }
-
-        Err(BufferError::from("This submmission is not currently in the buffer"))
     }
 }
 
@@ -218,8 +215,7 @@ pub mod tests{
 
         assert_eq!(false, buffer.submission_exists(&j1));
         buffer.add_job(j1);
-
-        let j1 = BufferedJob::new(&Some("azer"), &Vec::new(), &2, SystemTime::now());
+        let j1 = BufferedJob::new(&Some("azer"), &Vec::new(), &1, SystemTime::now());
         assert_eq!(true, buffer.submission_exists(&j1));
     }
 }

@@ -12,11 +12,12 @@ use clusters::ClustersManager;
 use crate::clusters::LocalPhotogrammetry;
 use std::time::SystemTime;
 use chrono::{DateTime, Utc};
+use crate::services::ResultStorageService;
 
 fn main() -> Result<(), String>{
     let services_keeper = Arc::new(RwLock::new(ServicesKeeper::new()));
     let jobs_buffer = Arc::new(RwLock::new(JobsBuffer::new()));
-    let mut clusters_manager = Arc::new(RwLock::new(ClustersManager::new()));
+    let clusters_manager = Arc::new(RwLock::new(ClustersManager::new()));
     add_clusters(&clusters_manager);
 
     // image storage
@@ -33,6 +34,7 @@ fn main() -> Result<(), String>{
     let photogrammetry_service = PhotogrammetryService::new(services_keeper.clone())?;
 
     // result storage
+    let result_storage_service = ResultStorageService::new(services_keeper.clone())?;
     let output_access_info = ServiceAccessInformation::new(
         "localhost",
         7881,
@@ -43,20 +45,21 @@ fn main() -> Result<(), String>{
 
     let orchestrator = Orchestrator::new(
         10,
-        0, // set to 0 to avoid blocking the jos workflow for nothing until Cluster.get_green_energy_produced() is implemented for a cluster
+        300, // set to 0 to avoid blocking the jos workflow for nothing until Cluster.get_green_energy_produced() is implemented for a cluster
         services_keeper.clone(),
         jobs_buffer.clone(),
         clusters_manager.clone(),
-        image_storage_service.clone(),
-        photogrammetry_service.clone()
+        Arc::new(image_storage_service),
+        Arc::new(photogrammetry_service),
+        Arc::new(result_storage_service)
     );
-    orchestrator.start();
-
+    Orchestrator::start(Arc::new(orchestrator));
     Ok(())
 }
 
 fn add_clusters(clusters_manager: &Arc<RwLock<ClustersManager>>){
-    clusters_manager.write().unwrap().add_cluster(Box::new(LocalPhotogrammetry));
+    let mut cm_writer = clusters_manager.write().unwrap();
+    cm_writer.add_cluster(Box::new(LocalPhotogrammetry));
 }
 
 pub fn log(component: &str, message: &str){
@@ -72,5 +75,5 @@ pub fn log_error(message: &str) {
     let datetime: DateTime<Utc> = system_time.into();
     let formatted_datetime = datetime.format("%d/%m/%Y %T");
 
-    println!("[{}][ERROR] {}", formatted_datetime, message);
+    eprintln!("[{}][ERROR] {}", formatted_datetime, message);
 }

@@ -1,7 +1,7 @@
 use super::Cluster;
 
 pub struct ClustersManager{
-    clusters: Vec<Box<dyn Cluster>>
+    clusters: Vec<Box<dyn Cluster + Send + Sync>>
 }
 
 impl ClustersManager{
@@ -11,7 +11,7 @@ impl ClustersManager{
         }
     }
 
-    pub fn add_cluster(&mut self, cluster: Box<dyn Cluster>) {
+    pub fn add_cluster(&mut self, cluster: Box<dyn Cluster + Send + Sync>) {
         self.clusters.push(cluster);
     }
 
@@ -19,7 +19,7 @@ impl ClustersManager{
         self.clusters.len() > 0
     }
 
-    pub fn select_cluster(&self) -> Option<&Box<dyn Cluster>> {
+    pub fn select_cluster(&self) -> Option<&Box<dyn Cluster + Send + Sync>> {
         if !self.has_clusters() {
             return None;
         }
