@@ -23,6 +23,17 @@
 The service listens to the 7878 TCP and handles the following endpoints : 
 - [GET] /photogrammetry/<job-id>
 
+## Test with mocked services
+The orchestrator can run with mocked photogrammetry, image db and result db services. See the [mocks](https://github.com/magnesie/mocks) repository to learn how to deploy those mocks.
+
+Once the mocks are deployed, execute the following command :
+
+```bash
+cargo run
+```
+
+The orchestrator will start runing and dispatching the submissions created by the image db mock to the mocked photogrammetry service, which will then return fake addresses of falsely generated 3D models. The orchestrator will then send theses addresses to the mocked result database in order to simulate a download of the model.
+
 ## Configuration for Grid5000
 
 * Edit the OpenWeatherMap API key in config/open_weather_map.json
