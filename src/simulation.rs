@@ -3,10 +3,13 @@ pub static mut SIMULATION_STARTED: bool = false;
 
 pub static SHORT_JOB_PHOTOS_COUNT: i32 = 10;
 pub static LONG_JOB_PHOTOS_COUNT: i32 = 30;
-pub static SIMULATION_1_SHORTS_COUNT: i32 = 60;
-pub static SIMULATION_2_LONGS_COUNT: i32 = 20;
-pub static SIMULATION_3_SHORTS_COUNT: i32 = 30;
-pub static SIMULATION_3_LONGS_COUNT: i32 = 10;
+pub static SIMULATION_1_SHORTS_COUNT: i32 = 600;
+pub static SIMULATION_2_LONGS_COUNT: i32 = 200;
+pub static SIMULATION_3_SHORTS_COUNT: i32 = 300;
+pub static SIMULATION_3_LONGS_COUNT: i32 = 100;
+
+pub static NODES_COUNT: usize = 48;
+pub static NODE_ENERGY_USAGE: f32 = 0.0183;
 
 pub static TIME_PER_PHOTO: i32 = 60;
 pub static ITERATION_DURATION:i32 = 600;
@@ -146,9 +149,33 @@ impl PhotogrammetryMock{
     }
 
     pub fn progress(&mut self){
+        /*
+        let job = self.jobs.get_mut(0);
+
+        if job.is_some(){
+            let job = job.unwrap();
+            job.lifetime_in_seconds += ITERATION_DURATION;
+
+            let photos_count = job.photos.len();
+            if job.lifetime_in_seconds >= (photos_count as i32) * TIME_PER_PHOTO {
+                self.jobs.remove(0);
+            }
+        }*/
+
+        for i in 0..NODES_COUNT{
+            let mut job = self.jobs.get_mut(i);
+            if job.is_none() {
+                break;
+            } else {
+                job.unwrap().lifetime_in_seconds += ITERATION_DURATION;
+            }
+        }
+
+        /*
         for job in self.jobs.iter_mut(){
             job.lifetime_in_seconds += ITERATION_DURATION;
         }
+        */
 
         self.jobs.retain(|job| {
             let photos_count = job.photos.len();
@@ -158,15 +185,33 @@ impl PhotogrammetryMock{
                 true
             }
         });
+
     }
 
     pub fn get_currently_used_energy(&self) -> f32{
+        let jobs_count = self.jobs.len();
+
+        if jobs_count > NODES_COUNT {
+            (NODES_COUNT as f32) * NODE_ENERGY_USAGE
+        } else {
+            (jobs_count as f32) * NODE_ENERGY_USAGE
+        }
+
+        /*
         let mut total_photos = 0;
         for job in &self.jobs{
             total_photos += job.photos.len();
         }
-
         return (total_photos as f32) * crate::ENERGY_COST_PER_COMPLEXITY_UNIT;
+
+        */
+        /*let j = self.jobs.get(0);
+
+        if j.is_some() {
+            (j.unwrap().photos.len() as f32) * crate::ENERGY_COST_PER_COMPLEXITY_UNIT
+        } else {
+            0f32
+        }*/
     }
 }
 
