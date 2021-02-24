@@ -17,6 +17,9 @@ use std::env;
 use chrono::{DateTime, Utc};
 use crate::services::ResultStorageService;
 
+/// If set to true, displays logging in the standard output
+const VERBOSE: bool = true;
+
 /// Instantiates the various components and starts the Orchestrator
 fn main() -> Result<(), String>{
 
@@ -107,11 +110,13 @@ fn add_grid5000_cluster(clusters_manager: &Arc<RwLock<ClustersManager>>, usernam
 /// [22/02/2021 18:40:03][MyComponent] Hello there!
 /// ```
 pub fn log(component: &str, message: &str){
-    let system_time = SystemTime::now();
-    let datetime: DateTime<Utc> = system_time.into();
-    let formatted_datetime = datetime.format("%d/%m/%Y %T");
+    if VERBOSE {
+        let system_time = SystemTime::now();
+        let datetime: DateTime<Utc> = system_time.into();
+        let formatted_datetime = datetime.format("%d/%m/%Y %T");
 
-    println!("[{}][{}] {}", formatted_datetime, component, message);
+        println!("[{}][{}] {}", formatted_datetime, component, message);
+    }
 }
 
 /// Print an error to the standard error
