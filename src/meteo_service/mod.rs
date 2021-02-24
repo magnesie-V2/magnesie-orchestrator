@@ -1,2 +1,2 @@
-mod meteo_service;
+pub mod meteo_service;
 pub use meteo_service::MeteoClient;
