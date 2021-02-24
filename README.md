@@ -23,12 +23,12 @@
 The service listens to the 7878 TCP and handles the following endpoints : 
 - [GET] /photogrammetry/<job-id>
 
-## Configuration
+## Configuration for Grid5000
 
-* Modifier la clé d'API pour OpenWeatherMap dans config/open_weather_map.json
-* Ajouter une paire de clé ssh au format pem nommée orchestrateur_key.pem et orchestrateur_key.pub dans le dossier config.
-    * La clé publique doit être connue par le cloud provider (Grid5000 par exemple)
-* Vérifier la liste des sites Grid5000 dans ressources/grid5000_sites.txt. Ajouter ceux qui manquent si besoin.
+* Edit the OpenWeatherMap API key in config/open_weather_map.json
+* Add a SSH key pair in pem format named orchestrateur_key.pem and orchestrateur_key.pubin the config folder.
+    * The public key must be known by Grid5000
+* Check the list of Grid5000 sites in ressources/grid5000_sites.txt. Add any missing ones if needed.
 
 ## Test Grid5000 deployment
 
