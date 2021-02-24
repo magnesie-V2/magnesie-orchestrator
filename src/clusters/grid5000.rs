@@ -320,15 +320,21 @@ impl ClusterFeatures for Grid5000 {
 
     /// Get the status of the reservation
     fn get_reservation_status(&self) -> Option<ReservationStatus> {
-        let job_deployed: JobSubmitResponse = self.get_reservation(self.uid.clone()).unwrap();
-        if job_deployed.state == "waiting" || job_deployed.state == "launching" || job_deployed.state == "hold" {
-            return Some(ReservationStatus::Pending)
-        }
-        else if job_deployed.state == "running" {
-            return Some(ReservationStatus::ResourcesAvailable)
+
+        if self.uid.is_empty() {
+            return None
         }
         else {
-            return Some(ReservationStatus::Expired)
+            let job_deployed: JobSubmitResponse = self.get_reservation(self.uid.clone()).unwrap();
+            if job_deployed.state == "waiting" || job_deployed.state == "launching" || job_deployed.state == "hold" {
+                return Some(ReservationStatus::Pending)
+            }
+            else if job_deployed.state == "running" {
+                return Some(ReservationStatus::ResourcesAvailable)
+            }
+            else {
+                return Some(ReservationStatus::Expired)
+            }
         }
     }
 
@@ -352,7 +358,7 @@ fn launch_grid5000_client() {
 
     let priv_key: PathBuf = PathBuf::from("config/orchestrateur_key.pem");
 
-    let cluster = Grid5000::new(String::from(username),
+    let mut cluster = Grid5000::new(String::from(username),
                                 String::from(password),
                                 String::from(site),
                                 String::from(walltime));
