@@ -4,29 +4,36 @@ use std::sync::{Arc, RwLock};
 use std::net::{TcpStream, TcpListener};
 use std::io::{Read, Write};
 
-//use chrono::{DateTime};
-
 use crate::services::{ImageStorageService, PhotogrammetryService, ServiceError, ServicesKeeper, Service, ResultStorageService};
 use crate::jobs_buffer::{JobsBuffer, BufferedJob};
 use crate::clusters::{ClustersManager, ReservationStatus, Cluster};
 use crate::{log, log_error};
 
-const COMPLEXITY_CONSTANT: f32 = 1f32; // TODO define
+/// This constants needs to be set to weight the energy cost of calculations
+const ENERGY_COST_PER_COMPLEXITY_UNIT: f32 = 1f32;
 
+/// The brain of the application. Its purpose is to orchestrate all the microservices while following energetic requirements
 pub struct Orchestrator{
+    /// Delay in seconds between iterations of the orchestrator main loop (cf Orchestrator::start())<br>
     ticks_delay: u64,
+    /// Delay in seconds before forcing jobs processing without waiting for green energy<br>
     green_energy_timeout: u64,
+    /// Keeps information to access microservices (hostname, port, username, password)<br>
     services_keeper: Arc<RwLock<ServicesKeeper>>,
+    /// Keeps the list of ongoing submissions and jobs. Note: a job is a submission that has been sent to the photogrammetry service<br>
     jobs_buffer: Arc<RwLock<JobsBuffer>>,
+    /// Keeps the list of clusters where the photogrammetry service can be deployed in<br>
     clusters_manager: Arc<RwLock<ClustersManager>>,
+    /// Client for the images storage service, which stores the images of end users submissions<br>
     image_storage: Arc<ImageStorageService>,
+    /// Client for the photogrammetry microservice<br>
     photogrammetry: Arc<PhotogrammetryService>,
+    /// Client for the results storage microservice, which stores the result of photogrammetry calculations<br>
     result_storage: Arc<ResultStorageService>
 }
 
 impl Orchestrator {
-    /// @param ticks_delay delay between ticks of the orchestrator in seconds
-    /// @param green_energy_timeout delay before forcing jobs processing without green energy in seconds
+    /// Constructs an Orchestrator struct
     pub fn new(ticks_delay: u64, green_energy_timeout: u64,
                services_keeper: Arc<RwLock<ServicesKeeper>>,jobs_buffer: Arc<RwLock<JobsBuffer>>, clusters_manager: Arc<RwLock<ClustersManager>>,
                image_storage: Arc<ImageStorageService>, photogrammetry: Arc<PhotogrammetryService>, result_storage: Arc<ResultStorageService>) -> Orchestrator{
@@ -37,8 +44,8 @@ impl Orchestrator {
         }
     }
 
-    /// TODO: don't deploy with 0 jobs
-    /// We have to use an associated function rather than a method here to allow using the orchestrator in different threads. Indeed, "self" could not be used in a different thread for lifetime reasons
+    /// Starts the orchestrator main loop<br>
+    /// It uses an Arc<Orchestrator> as it must be able to call the Orchestrator::start_web_server() function
     pub fn start(orchestrator: Arc<Orchestrator>){
         log("Orchestrator", "Starting up");
         log("Orchestrator", "Starting up web server");
@@ -60,14 +67,13 @@ impl Orchestrator {
                     let mut clusters_manager = orchestrator.clusters_manager.write().unwrap();
                     if let Some(selected_cluster) = clusters_manager.select_cluster() {
                         log("Orchestrator", "Selecting jobs to run");
-                        let energy = selected_cluster.get_green_energy_produced();
-                        let jobs_to_run = orchestrator.select_jobs_to_run(&mut jobs, &energy);
+                        let jobs_to_run = orchestrator.select_jobs_to_run(&mut jobs, &selected_cluster);
 
                         if jobs_to_run.is_some(){
                             let reservation_status = selected_cluster.get_reservation_status();
 
                             if reservation_status.is_none() {
-                                Orchestrator::deploy_photogrammetry_service(&orchestrator, selected_cluster)
+                                orchestrator.deploy_and_register_photogrammetry_service(selected_cluster);
                             } else {
                                 let reservation_status = reservation_status.unwrap();
 
@@ -78,10 +84,10 @@ impl Orchestrator {
                                         }
                                     }
                                     ReservationStatus::Pending => {
-                                        log("Orchestrator", "Waiting for the photogrammetry service");
+                                        log("Orchestrator", "Waiting for the photogrammetry service node reservation");
                                     }
                                     ReservationStatus::Expired => {
-                                        Orchestrator::deploy_photogrammetry_service(&orchestrator, selected_cluster)
+                                        orchestrator.deploy_and_register_photogrammetry_service(selected_cluster);
                                     }
                                 }
                             }
@@ -95,17 +101,19 @@ impl Orchestrator {
         }
     }
 
-    fn deploy_photogrammetry_service(orchestrator: &Arc<Orchestrator>, selected_cluster: &mut Box<dyn Cluster + Send + Sync>) {
+    /// Deploys the photogrammetry service and registers its access information in the services keeper
+    fn deploy_and_register_photogrammetry_service(&self, selected_cluster: &mut Cluster) {
         log("Orchestrator", "Deploying photogrammetry service");
         if let Ok(sai) = selected_cluster.deploy_photogrammetry_service() {
             {
-                let mut sk = orchestrator.services_keeper.write().unwrap();
-                sk.register_service(&orchestrator.photogrammetry.get_name(), sai);
+                let mut sk = self.services_keeper.write().unwrap();
+                sk.register_service(&self.photogrammetry.get_name(), sai);
             }
         }
     }
 
-    /// We have to use an associated function rather than a method here to allow using the orchestrator in different threads. Indeed, "self" could not be used in a different thread for lifetime reasons
+    /// Starts a web service that listens to the 7878 port to make the orchestrator abe to handle pings from other microservices<br>
+    /// It uses an Arc<Orchestrator> to allow using the orchestrator in different threads, which is necessary to handle TCP connections
     fn start_web_server(orchestrator: Arc<Orchestrator>){
         let o_clone = orchestrator.clone();
         thread::spawn(move || -> Result<(), String>{
@@ -132,6 +140,7 @@ impl Orchestrator {
         });
     }
 
+    /// Fetches the new submissions from the ImageStorageService and adds them to the JobsBuffer if it doesn't have them already
     fn add_submissions_to_buffer(&self) -> Result<(), String>{
         log("ImageStorage", "Fetching new submissions");
         let get_new_submissions_result = self.image_storage.get_new_submissions();
@@ -148,38 +157,40 @@ impl Orchestrator {
 
         for s in new_submissions.into_iter() {
             let photos: Vec<&str> = s.photos.iter().map(|s| s as &str).collect();
-            /*let submission_time = DateTime::parse_from_str(&s.submission_date, "%Y-%m-%dT%H:%M:%S%.3f%z");
+            let job = BufferedJob::new(&None, &photos, &s.id, SystemTime::now());
 
-            match submission_time {
-                Ok(s_time) => {*/
-                    let job = BufferedJob::new(&None, &photos, &s.id, SystemTime::now()/*SystemTime::from(s_time)*/);
-                    if let false = buffer.submission_exists(&job) {
-                        log("JobsBuffer", &format!("Adding job {}", job.to_string()));
+            if let false = buffer.submission_exists(&job) {
+                log("JobsBuffer", &format!("Adding job {}", job.to_string()));
 
-                        if let Err(er) = buffer.add_job(job) {
-                            log_error(&er.to_string());
-                        }
-                    }
-                /*}
-                Err(er) => {
-                    log_error(&format!("[ERROR] Unable to parse datetime of submission {} ({}). Make sure the datetime follows the same pattern as 2021-01-17T14:32:14.184+0001", s.id, er.to_string()));
+                if let Err(er) = buffer.add_job(job) {
+                    log_error(&er.to_string());
                 }
-            }*/
+            }
         }
 
         Ok(())
     }
 
-    // Todo : choose jobs based on complexity (job.get_complexity()) and available energy
-    fn select_jobs_to_run<'a>(&self, jobs: &'a mut[&'a mut BufferedJob], available_energy: &'a Option<f32>) -> Option<Vec<&'a mut BufferedJob>> {
+    /// Decides which jobs to run in the list of pending submissions based on available green energy produced for the selected cluster
+    fn select_jobs_to_run<'a>(&self, jobs: &'a mut[&'a mut BufferedJob], selected_cluster: &'a Cluster) -> Option<Vec<&'a mut BufferedJob>> {
         let mut jobs_to_run = Vec::new();
         let mut total_complexity = 0f32;
 
+        let energy = selected_cluster.get_green_energy_produced();
+        let consumption = selected_cluster.get_current_energy_consumption();
+        let available_energy;
+        if energy.is_none() {
+            available_energy = 0f32;
+        } else if consumption.is_none() {
+            available_energy = energy.unwrap();
+        } else {
+            available_energy = energy.unwrap() - consumption.unwrap();
+        }
 
         for job in jobs.iter_mut() {
             let job_complexity = job.get_complexity();
 
-            if available_energy.is_some() && total_complexity + job_complexity < available_energy.unwrap() * COMPLEXITY_CONSTANT {
+            if available_energy <= 0.001f32 && (total_complexity + job_complexity) * ENERGY_COST_PER_COMPLEXITY_UNIT < available_energy {
                 total_complexity += job_complexity;
                 jobs_to_run.push(&mut(**job));
             } else if let Ok(time_pending) = SystemTime::now().duration_since(job.submission_date) {
@@ -193,6 +204,7 @@ impl Orchestrator {
         return Some(jobs_to_run);
     }
 
+    /// Sends all the received jobs to the photogrammetry service
     fn run_jobs(&self, jobs: &mut[&mut BufferedJob]) -> Result<(), String>{
         log("Orchestrator", &format!("Sending {} job(s) to the photogrammetry service", jobs.len()));
         for job in jobs.iter_mut(){
@@ -214,7 +226,7 @@ impl Orchestrator {
         Ok(())
     }
 
-    /// TODO Error cases, and refactor
+    /// Handles basic tcp connections
     fn handle_tcp_connection (&self, mut stream: TcpStream) -> Result<(), String> {
         let mut buffer = [0; 1024];
         let response_status_line;
@@ -290,6 +302,12 @@ impl Orchestrator {
         Ok(())
     }
 
+    /// Reacts to a ping from the photogrammetry microservice when a job is done : <br>
+    /// <ul>
+    /// <li>Sends the result url to the result storage microservice</li>
+    /// <li>Sets the status of the submission to 'Done' in the image storage service</li>
+    /// <li>Removes the submission from the buffer</li>
+    /// </ul>
     fn photogrammetry_callback(&self, id: &str) -> Result<(), ServiceError>{
         let result_url = self.photogrammetry.get_job_result_url(id);
         match result_url {
