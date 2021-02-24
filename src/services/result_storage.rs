@@ -56,33 +56,3 @@ impl Service for ResultStorageService {
         self.services_keeper.clone()
     }
 }
-
-#[test]
-pub fn test(){
-    use super::ServiceAccessInformation;
-    let services_keeper = Arc::new(RwLock::new(ServicesKeeper::new()));
-
-    let input_access_info = ServiceAccessInformation::new(
-        "localhost",
-        7881,
-        "",
-        "",
-    );
-
-    match ResultStorageService::new(services_keeper.clone()) {
-        Ok(service) => {
-            println!("Setting the result storage service information");
-            services_keeper.write().unwrap().register_service("result storage", input_access_info);
-
-            println!("Test: using the image storage service");
-            match service.post_result(&1, "http://localhost:7879/eazra-azeazr-azdaz-dbe1.tar.gz") {
-                Ok(_) => {
-                    println!("Result posted");
-                }
-                Err(error) => println!("{}", error)
-            }
-
-        },
-        Err(_) => unimplemented!(),
-    };
-}
