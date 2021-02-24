@@ -12,15 +12,33 @@ pub trait ClusterFeatures {
     /// Mocked with a gaussian function
     fn get_green_energy_produced(&self) -> Option<f32> {
             let e = crate::simulation::get_energy_produced();
-            if e <= 0.0001 {
+            if e <= crate::FLOAT_NIL {
                 None
             } else {
                 Some(e)
             }
     }
 
+    fn get_node_energy_requirement(&self) -> f32{
+        0.0183
+    }
+
     /// Returns how much energy has been consumed since the last iteration of the orchestrator's loop
-    fn get_current_energy_consumption(&self) -> Option<f32> { None }
+    fn get_current_energy_consumption(&self) -> Option<f32> {
+        let s = crate::PHOTOGRAMMETRY_SERVICE.lock();
+
+        if s.is_err() {
+            panic!("Could not retrieve currently used energy");
+        }
+
+
+        let e = s.unwrap().get_currently_used_energy();
+        if e <= crate::FLOAT_NIL {
+            None
+        } else {
+            Some(e)
+        }
+    }
 
     /// Deploys the photogrammetry service on this cluster
     fn deploy_photogrammetry_service(&mut self) -> Result<ServiceAccessInformation, ClusterError>;
