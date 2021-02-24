@@ -110,7 +110,6 @@ impl ImageStorageService {
                         let mut rng = thread_rng();
                         submissions.shuffle(&mut rng);
 
-                        println!("{:?}", submissions);
                         return Ok(submissions);
                     } else {
                         panic!("Unknown simulation number. Valid numbers are 1, 2 and 3.");
