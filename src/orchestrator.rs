@@ -171,12 +171,12 @@ impl Orchestrator {
         } else {
             available_energy = energy.unwrap() - consumption.unwrap();
         }
-
+        let node_requirement = selected_cluster.get_node_energy_requirement();
         for job in jobs.iter_mut() {
             let job_complexity = job.get_complexity();
 
-            if available_energy > 0.001f32 && (total_complexity + job_complexity) * ENERGY_COST_PER_COMPLEXITY_UNIT < available_energy {
-                total_complexity += job_complexity;
+            if available_energy > crate::FLOAT_NIL && ((total_complexity + node_requirement) < available_energy) {
+                total_complexity += node_requirement;
                 jobs_to_run.push(&mut(**job));
             } else if let Ok(time_pending) = SystemTime::now().duration_since(job.submission_date) {
                 if time_pending.as_secs() >= self.green_energy_timeout {
