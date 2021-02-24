@@ -23,18 +23,29 @@
 The service listens to the 7878 TCP and handles the following endpoints : 
 - [GET] /photogrammetry/<job-id>
 
-## Configuration
+## Test with mocked services
+The orchestrator can run with mocked photogrammetry, image db and result db services. See the [mocks](https://github.com/magnesie/mocks) repository to learn how to deploy those mocks.
 
-* Modifier la clé d'API pour OpenWeatherMap dans config/open_weather_map.json
-* Ajouter une paire de clé ssh au format pem nommée orchestrateur_key.pem et orchestrateur_key.pub dans le dossier config.
-    * La clé publique doit être connue par le cloud provider (Grid5000 par exemple)
-* Vérifier la liste des sites Grid5000 dans ressources/grid5000_sites.txt. Ajouter ceux qui manquent si besoin.
+Once the mocks are deployed, execute the following command :
+
+```bash
+cargo run
+```
+
+The orchestrator will start runing and dispatching the submissions created by the image db mock to the mocked photogrammetry service, which will then return fake addresses of falsely generated 3D models. The orchestrator will then send theses addresses to the mocked result database in order to simulate a download of the model.
+
+## Configuration for Grid5000
+
+* Edit the OpenWeatherMap API key in config/open_weather_map.json
+* Add a SSH key pair in pem format named orchestrateur_key.pem and orchestrateur_key.pubin the config folder.
+    * The public key must be known by Grid5000
+* Check the list of Grid5000 sites in ressources/grid5000_sites.txt. Add any missing ones if needed.
 
 ## Test Grid5000 deployment
 
 To test the deployment of the photogrammetry service on Grid5000 :
 
 ```bash
-cargo test launch_grid5000_client -- "username" "password" "walltime" --nocapture
+cargo test launch_grid5000_client -- "username" "password" "site" "walltime" --nocapture
 ```
 
