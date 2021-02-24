@@ -39,44 +39,92 @@ impl ImageStorageService {
     }
 
     /// Returns new submissions currently stored in the ImageStorageService
+    ///
+    /// Mock: Generates submissions based on simulation constants
     pub fn get_new_submissions(&self) -> Result<Vec<Submission>, ServiceError> {
-        let access_information = self.get_access_information()?;
+        use rand::thread_rng;
+        use rand::seq::SliceRandom;
+        use std::{env, thread, time};
+        use crate::simulation::*;
+        unsafe {
+            if crate::SIMULATION_STARTED {
+                return Ok(Vec::new());
+            } else {
+                crate::SIMULATION_STARTED = true;
+                let args: Vec<String> = env::args().collect();
+                if args.len() > 1{
+                    let arg1 = &args[1];
+                    let simulation_id: i32 = arg1.parse().unwrap();
 
-        let request_url = format!("http://{host}:{port}/new_submissions",
-                                  host=access_information.get_host(),
-                                  port=access_information.get_port());
+                    let mut short_job_photos = Vec::new();
+                    for i in 1..SHORT_JOB_PHOTOS_COUNT+1{
+                        short_job_photos.push(format!("{}.jpeg", i));
+                    }
 
-        let request = self.client.get(&request_url);
+                    let mut long_job_photos = Vec::new();
+                    for i in 1..LONG_JOB_PHOTOS_COUNT+1{
+                        long_job_photos.push(format!("{}.jpeg", i));
+                    }
 
-        let response = request.send()?;
-        let response_body: Vec<Submission> = response.json()?;
+                    if simulation_id == 1 { // 60 shorts jobs
+                        let mut submissions = Vec::new();
+                        for i in 1..SIMULATION_1_SHORTS_COUNT+1{
+                            submissions.push(Submission{
+                                id: i,
+                                photos: short_job_photos.clone(),
+                                submission_date: "".to_string()
+                            });
+                        }
 
+                        return Ok(submissions);
+                    } else if simulation_id == 2 { // 20 long jobs
+                        let mut submissions = Vec::new();
+                        for i in 1..SIMULATION_2_LONGS_COUNT+1{
+                            submissions.push(Submission{
+                                id: i,
+                                photos: long_job_photos.clone(),
+                                submission_date: "".to_string()
+                            });
+                        }
 
+                        return Ok(submissions);
+                    } else if simulation_id == 3 { // 10 longs jobs and 30 short jobs
+                        let mut submissions = Vec::new();
 
-        Ok(response_body)
+                        for i in 1..SIMULATION_3_SHORTS_COUNT+1{
+                            submissions.push(Submission{
+                                id: i,
+                                photos: short_job_photos.clone(),
+                                submission_date: "".to_string()
+                            });
+                        }
+
+                        for i in 1..SIMULATION_3_LONGS_COUNT+1{
+                            submissions.push(Submission{
+                                id: SIMULATION_3_SHORTS_COUNT+i,
+                                photos: long_job_photos.clone(),
+                                submission_date: "".to_string()
+                            });
+                        }
+
+                        let mut rng = thread_rng();
+                        submissions.shuffle(&mut rng);
+
+                        println!("{:?}", submissions);
+                        return Ok(submissions);
+                    } else {
+                        panic!("Unknown simulation number. Valid numbers are 1, 2 and 3.");
+                    }
+                }
+
+                panic!("Missing simulation number. Ex: cargo run 1");
+            }
+        }
     }
 
     /// Updates the status of a submission in the ImageStorageService
     pub fn change_submission_status(&self, id: &i32, status: &str) -> Result<(), ServiceError> {
-        let access_information = self.get_access_information()?;
-
-        let request_url = format!("http://{host}:{port}/change_submission_status",
-                                  host=access_information.get_host(),
-                                  port=access_information.get_port());
-
-        let body = SubmissionUpdateRequestBody {
-            id: id.clone(),
-            status: status.to_string()
-        };
-
-        let request = self.client.post(&request_url).json(&body);
-        let response = request.send()?;
-
-        if response.status().is_success() {
-            return Ok(());
-        }
-
-        Err(ServiceError::from(response.status().to_string()))
+        unimplemented!();
     }
 }
 

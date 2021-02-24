@@ -29,25 +29,7 @@ impl ResultStorageService {
 
     /// Sends a result url to the result storage service
     pub fn post_result(&self, id: &i32, result_url: &str) -> Result<(), ServiceError> {
-        let access_information = self.get_access_information()?;
-
-        let request_url = format!("http://{host}:{port}/result",
-                                  host=access_information.get_host(),
-                                  port=access_information.get_port());
-
-        let body = ResultRequestBody {
-            submission_id: id.clone(),
-            result_url: result_url.to_string()
-        };
-
-        let request = self.client.post(&request_url).json(&body);
-        let response = request.send()?;
-
-        if response.status().is_success() {
-            return Ok(());
-        }
-
-        Err(ServiceError::from(response.status().to_string()))
+        Ok(())
     }
 }
 

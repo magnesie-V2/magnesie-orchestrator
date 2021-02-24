@@ -5,6 +5,7 @@ mod orchestrator;
 mod clusters;
 mod ssh_client;
 mod meteo_service;
+mod simulation;
 
 use std::sync::{Arc, RwLock};
 
@@ -13,34 +14,21 @@ use jobs_buffer::{JobsBuffer};
 use orchestrator::*;
 use clusters::{ClustersManager, LocalPhotogrammetry, Grid5000};
 use std::time::SystemTime;
-use std::env;
-use chrono::{DateTime, Utc};
+use std::{env, thread, time};
+use chrono::{DateTime, Utc, Datelike, Timelike};
 use crate::services::ResultStorageService;
+use simulation::*;
 
 /// If set to true, displays logging in the standard output
 const VERBOSE: bool = true;
 
 /// Instantiates the various components and starts the Orchestrator
 fn main() -> Result<(), String>{
-
-    let args: Vec<String> = env::args().collect();
-
     let services_keeper = Arc::new(RwLock::new(ServicesKeeper::new()));
     let jobs_buffer = Arc::new(RwLock::new(JobsBuffer::new()));
     let clusters_manager = Arc::new(RwLock::new(ClustersManager::new()));
-    
-    if args.len() > 1 {
-        log("Main", "Launch parameters found, adding Grid5000 cluster");
-        let username : &str = &args[1];
-        let password : &str = &args[2];
-        let site : &str = &args[3];
-        let walltime : &str = &args[4];
-        add_grid5000_cluster(&clusters_manager, username, password, site, walltime);
-    }
-    else {
-        add_clusters(&clusters_manager);
-    }
 
+    add_clusters(&clusters_manager);
 
     // image storage
     let image_storage_service = ImageStorageService::new(services_keeper.clone())?;
@@ -66,8 +54,7 @@ fn main() -> Result<(), String>{
     services_keeper.write().unwrap().register_service("result storage", output_access_info);
 
     let orchestrator = Orchestrator::new(
-        10,
-        0, // set to 0 to avoid blocking the jos workflow for nothing until Cluster.get_green_energy_produced() is implemented for a cluster
+        86400, // set to 0 to avoid blocking the jos workflow for nothing until Cluster.get_green_energy_produced() is implemented for a cluster
         services_keeper.clone(),
         jobs_buffer.clone(),
         clusters_manager.clone(),
@@ -75,7 +62,20 @@ fn main() -> Result<(), String>{
         Arc::new(photogrammetry_service),
         Arc::new(result_storage_service)
     );
-    Orchestrator::start(Arc::new(orchestrator));
+    let orchestrator = Arc::new(orchestrator);
+    Orchestrator::start_web_server(orchestrator.clone());
+
+    log_energy_headers();
+    loop {
+        orchestrator.update();
+
+        simulation::log_energy();
+
+        simulation::progress();
+        if simulation::should_end(){
+            break;
+        }
+    }
     Ok(())
 }
 
@@ -84,19 +84,6 @@ fn add_clusters(clusters_manager: &Arc<RwLock<ClustersManager>>){
 
     let mut cm_writer = clusters_manager.write().unwrap();
     cm_writer.add_cluster(Box::new(LocalPhotogrammetry::new()));
-}
-
-/// Adds a g5k cluster to the clusters manager
-fn add_grid5000_cluster(clusters_manager: &Arc<RwLock<ClustersManager>>, username : &str, password : &str, site : &str, walltime : &str){
-
-    let mut cm_writer = clusters_manager.write().unwrap();
-    
-    let grid5000_cluster  = Grid5000::new(String::from(username),
-    String::from(password),
-    String::from(site),
-    String::from(walltime));
-    
-    cm_writer.add_cluster(Box::new(grid5000_cluster));
 }
 
 /// Print a message to the standard output
@@ -114,8 +101,12 @@ pub fn log(component: &str, message: &str){
         let system_time = SystemTime::now();
         let datetime: DateTime<Utc> = system_time.into();
         let formatted_datetime = datetime.format("%d/%m/%Y %T");
-
-        println!("[{}][{}] {}", formatted_datetime, component, message);
+        unsafe{
+            let h = CURRENT_TIME_IN_SECONDS.wrapping_div(3600);
+            let m = (CURRENT_TIME_IN_SECONDS - h*3600).wrapping_div(60);
+            let s = CURRENT_TIME_IN_SECONDS - h*3600 - m*60;
+            println!("[{}:{}:{}][{}] {}", h, m, s, component, message);
+        }
     }
 }
 
@@ -136,3 +127,5 @@ pub fn log_error(message: &str) {
 
     eprintln!("[{}][ERROR] {}", formatted_datetime, message);
 }
+
+

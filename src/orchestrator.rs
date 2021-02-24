@@ -9,13 +9,11 @@ use crate::jobs_buffer::{JobsBuffer, BufferedJob};
 use crate::clusters::{ClustersManager, ReservationStatus, Cluster};
 use crate::{log, log_error};
 
-/// This constants needs to be set to weight the energy cost of calculations
-const ENERGY_COST_PER_COMPLEXITY_UNIT: f32 = 1f32;
+/// This constants needs to be set to weight the energy cost of calculations. 1 CU (complexity unit) = 1 photo
+pub const ENERGY_COST_PER_COMPLEXITY_UNIT: f32 = 0.00061f32;
 
 /// The brain of the application. Its purpose is to orchestrate all the microservices while following energetic requirements
 pub struct Orchestrator{
-    /// Delay in seconds between iterations of the orchestrator main loop (cf Orchestrator::start())
-    ticks_delay: u64,
     /// Delay in seconds before forcing jobs processing without waiting for green energy
     green_energy_timeout: u64,
     /// Keeps information to access microservices (hostname, port, username, password)
@@ -34,72 +32,57 @@ pub struct Orchestrator{
 
 impl Orchestrator {
     /// Constructs an Orchestrator struct
-    pub fn new(ticks_delay: u64, green_energy_timeout: u64,
+    pub fn new(green_energy_timeout: u64,
                services_keeper: Arc<RwLock<ServicesKeeper>>,jobs_buffer: Arc<RwLock<JobsBuffer>>, clusters_manager: Arc<RwLock<ClustersManager>>,
                image_storage: Arc<ImageStorageService>, photogrammetry: Arc<PhotogrammetryService>, result_storage: Arc<ResultStorageService>) -> Orchestrator{
         Orchestrator{
-            ticks_delay, green_energy_timeout,
+            green_energy_timeout,
             services_keeper, jobs_buffer, clusters_manager,
             image_storage, photogrammetry, result_storage
         }
     }
 
-    /// Starts the orchestrator main loop
-    ///
-    /// It uses an Arc<Orchestrator> as it must be able to call the Orchestrator::start_web_server() function
-    pub fn start(orchestrator: Arc<Orchestrator>){
-        log("Orchestrator", "Starting up");
-        log("Orchestrator", "Starting up web server");
+    pub fn update(&self) {
+        if let Err(_) = self.add_submissions_to_buffer() {}
 
-        Orchestrator::start_web_server(orchestrator.clone());
+        let mut buffer = self.jobs_buffer.write().unwrap();
 
-        loop {
-            if let Err(_) = orchestrator.add_submissions_to_buffer(){
+        if buffer.has_buffered_jobs() {
+            if let Some(jobs) = buffer.get_pending_submissions() {
+                let mut jobs = jobs;
 
-            }
+                log("Orchestrator", "Selecting cluster");
+                let mut clusters_manager = self.clusters_manager.write().unwrap();
+                if let Some(selected_cluster) = clusters_manager.select_cluster() {
+                    log("Orchestrator", "Selecting jobs to run");
+                    let jobs_to_run = self.select_jobs_to_run(&mut jobs, &selected_cluster);
 
-            let mut buffer = orchestrator.jobs_buffer.write().unwrap();
+                    if jobs_to_run.is_some() {
+                        let reservation_status = selected_cluster.get_reservation_status();
 
-            if buffer.has_buffered_jobs() {
-                if let Some(jobs) = buffer.get_pending_submissions(){
-                    let mut jobs = jobs;
+                        if reservation_status.is_none() {
+                            self.deploy_and_register_photogrammetry_service(selected_cluster);
+                        } else {
+                            let reservation_status = reservation_status.unwrap();
 
-                    log("Orchestrator", "Selecting cluster");
-                    let mut clusters_manager = orchestrator.clusters_manager.write().unwrap();
-                    if let Some(selected_cluster) = clusters_manager.select_cluster() {
-                        log("Orchestrator", "Selecting jobs to run");
-                        let jobs_to_run = orchestrator.select_jobs_to_run(&mut jobs, &selected_cluster);
-
-                        if jobs_to_run.is_some(){
-                            let reservation_status = selected_cluster.get_reservation_status();
-
-                            if reservation_status.is_none() {
-                                orchestrator.deploy_and_register_photogrammetry_service(selected_cluster);
-                            } else {
-                                let reservation_status = reservation_status.unwrap();
-
-                                match reservation_status{
-                                    ReservationStatus::ResourcesAvailable => {
-                                        if let Err(_) = orchestrator.run_jobs(&mut jobs_to_run.unwrap()){
-
-                                        }
-                                    }
-                                    ReservationStatus::Pending => {
-                                        log("Orchestrator", "Waiting for the photogrammetry service node reservation");
-                                    }
-                                    ReservationStatus::Expired => {
-                                        orchestrator.deploy_and_register_photogrammetry_service(selected_cluster);
-                                    }
+                            match reservation_status {
+                                ReservationStatus::ResourcesAvailable => {
+                                    if let Err(_) = self.run_jobs(&mut jobs_to_run.unwrap()) {}
+                                }
+                                ReservationStatus::Pending => {
+                                    log("Orchestrator", "Waiting for the photogrammetry service node reservation");
+                                }
+                                ReservationStatus::Expired => {
+                                    self.deploy_and_register_photogrammetry_service(selected_cluster);
                                 }
                             }
                         }
                     }
                 }
             }
-            buffer.check_timeouts();
-            drop(buffer);
-            thread::sleep(time::Duration::from_secs(orchestrator.ticks_delay.clone()));
         }
+        buffer.check_timeouts();
+        drop(buffer);
     }
 
     /// Deploys the photogrammetry service and registers its access information in the services keeper
@@ -116,7 +99,7 @@ impl Orchestrator {
     /// Starts a web service that listens to the 7878 port to make the orchestrator abe to handle pings from other microservices
     ///
     /// It uses an Arc<Orchestrator> to allow using the orchestrator in different threads, which is necessary to handle TCP connections
-    fn start_web_server(orchestrator: Arc<Orchestrator>){
+    pub fn start_web_server(orchestrator: Arc<Orchestrator>){
         let o_clone = orchestrator.clone();
         thread::spawn(move || -> Result<(), String>{
             match TcpListener::bind("0.0.0.0:7878"){
@@ -203,7 +186,11 @@ impl Orchestrator {
             }
         }
 
-        return Some(jobs_to_run);
+        return if jobs_to_run.len() == 0 {
+            None
+        } else {
+            Some(jobs_to_run)
+        }
     }
 
     /// Sends all the received jobs to the photogrammetry service

@@ -1,14 +1,22 @@
 use crate::services::ServiceAccessInformation;
 use crate::clusters::cluster_error::ClusterError;
+use crate::CURRENT_TIME_IN_SECONDS;
 
 /// Custom type that represents a ClusterFeatures trait object
 pub type Cluster = Box<dyn ClusterFeatures + Send + Sync>;
 
 /// Defines feature shared by all clusters
 pub trait ClusterFeatures {
-    /// Returns how much energy as been produced since the last iteration of the orchestrator's loop
+    /// Returns how much energy as been produced since the last iteration of the program's loop
+    ///
+    /// Mocked with a gaussian function
     fn get_green_energy_produced(&self) -> Option<f32> {
-        None 
+            let e = crate::simulation::get_energy_produced();
+            if e <= 0.0001 {
+                None
+            } else {
+                Some(e)
+            }
     }
 
     /// Returns how much energy has been consumed since the last iteration of the orchestrator's loop

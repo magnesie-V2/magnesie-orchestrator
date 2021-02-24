@@ -23,7 +23,7 @@ struct PhotogrammetryJobRequestBody{
 /// HTTP client for the photogrammetry microservice
 pub struct PhotogrammetryService {
     services_keeper: Arc<RwLock<ServicesKeeper>>,
-    client: Client // it's best to create a client and reuse it for request pooling
+    client: Client, // it's best to create a client and reuse it for request pooling
 }
 
 impl PhotogrammetryService {
@@ -37,49 +37,27 @@ impl PhotogrammetryService {
 
     /// Sends pictures urls to the photogrammetry microservice and returns the id of the created job
     pub fn create_job(&self, images_urls: &[String], callback_url: &str) -> Result<String, ServiceError> {
-        let access_information = self.get_access_information()?;
+        let s = crate::simulation::PHOTOGRAMMETRY_SERVICE.lock();
 
-        let request_url = format!("http://{host}:{port}/job",
-                                  host=access_information.get_host(),
-                                  port=access_information.get_port());
-
-        let body = PhotogrammetryJobRequestBody {
-            photos: Vec::from(images_urls),
-            callback: String::from(callback_url)
-        };
-
-        let request = self.client.post(&request_url).json(&body);
-
-        let response = request.send()?;
-        let response_body: PhotogrammetryJob = response.json()?;
-
-        if let Some(id) = response_body.id {
-            return Ok(id);
+        if s.is_err() {
+            return Err(ServiceError::from("simulated job creation"));
         }
 
-        Err(ServiceError::from("The id field wasn't found in the response body"))
+        Ok(s.unwrap().create_job(images_urls, callback_url))
     }
 
     /// Retrieves information about a job based on its id
     pub fn get_job(&self, id: &str) -> Result<PhotogrammetryJob, ServiceError>{
-        let access_information = self.get_access_information()?;
+        let s = crate::simulation::PHOTOGRAMMETRY_SERVICE.lock();
 
-        let request_url = format!("http://{host}:{port}/job/{id}",
-                                  host=access_information.get_host(),
-                                  port=access_information.get_port(),
-                                  id=id);
-
-        let request = self.client.get(&request_url);
-
-        let response = request.send()?;
-        let mut response_body: PhotogrammetryJob = response.json()?;
-
-        match response_body.id {
-            None => response_body.id = Some(String::from(id)),
-            _ => {}
+        if s.is_err() {
+            return Err(ServiceError::from("simulated job get failed"));
         }
 
-        Ok(response_body)
+        match s.unwrap().get_job(id){
+            None => Err(ServiceError::from("simulated job get failed: job does not exist")),
+            Some(j) => Ok(j)
+        }
     }
 
     /// Retrieves information about a job's result based on its id
