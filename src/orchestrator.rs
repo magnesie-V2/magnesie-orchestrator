@@ -203,7 +203,12 @@ impl Orchestrator {
             }
         }
 
-        return Some(jobs_to_run);
+        if jobs_to_run.len() == 0 {
+            return None;
+        }
+        else {
+            return Some(jobs_to_run);
+        }
     }
 
     /// Sends all the received jobs to the photogrammetry service
