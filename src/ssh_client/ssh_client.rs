@@ -119,7 +119,7 @@ impl SshClient {
 
         // Builde Docker Image
         let mut channel = sess.channel_session().unwrap();
-        channel.exec("docker pull mgaonach/magnesie-photogrammetry-mock:latest").unwrap();
+        channel.exec("docker pull mgaonach/magnesie-photogrammetry:latest").unwrap();
         let mut s = String::new();
         channel.read_to_string(&mut s).unwrap();
         println!("{}", s);
@@ -136,7 +136,7 @@ impl SshClient {
 
         // Run Docker Image
         let mut channel = sess.channel_session().unwrap();
-        channel.exec("docker run --name=magnesie-photogrammetry-mock -p 7879:8000 mgaonach/magnesie-photogrammetry-mock &").unwrap();
+        channel.exec("docker run --name=magnesie-photogrammetry -p 7879:8000 mgaonach/magnesie-photogrammetry &").unwrap();
         let mut s = String::new();
         channel.read_to_string(&mut s).unwrap();
         println!("{}", s);
