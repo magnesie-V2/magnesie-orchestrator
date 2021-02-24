@@ -20,7 +20,7 @@ use crate::services::ResultStorageService;
 use simulation::*;
 
 /// If set to true, displays logging in the standard output
-const VERBOSE: bool = true;
+const VERBOSE: bool = false;
 
 /// Instantiates the various components and starts the Orchestrator
 fn main() -> Result<(), String>{
