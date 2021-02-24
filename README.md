@@ -35,6 +35,6 @@ The service listens to the 7878 TCP and handles the following endpoints :
 To test the deployment of the photogrammetry service on Grid5000 :
 
 ```bash
-cargo test launch_grid5000_client -- "username" "password" "walltime" --nocapture
+cargo test launch_grid5000_client -- "username" "password" "site" "walltime" --nocapture
 ```
 
