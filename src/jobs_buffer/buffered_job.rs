@@ -2,15 +2,20 @@ use std::time::SystemTime;
 use chrono::offset::Utc;
 use chrono::DateTime;
 
-/// Data structure representing a job in the orchestrator's buffer
+/// Represents a job in the orchestrator's buffer
 pub struct BufferedJob{
+    /// The job's id. It's None by default but can be set to Some(String) to indicate it's currently being processed
     pub id: Option<String>,
+    /// The list of photos of the submission
     pub photos: Vec<String>,
+    /// The id of the original submission
     pub submission_id: i32,
+    /// The time when this submission has been added to the buffer
     pub submission_date: SystemTime,
 }
 
 impl BufferedJob{
+    /// Creates a BufferedJob struct
     pub fn new(id: &Option<&str>, photos: &[&str], submission_id: &i32, submission_date: SystemTime) -> BufferedJob {
         let id = match id {
             None => None,
@@ -27,6 +32,9 @@ impl BufferedJob{
         }
     }
 
+    /// Returns the complexity of this job
+    ///
+    /// Currently simply returns the number of the photos
     pub fn get_complexity(&self) -> f32 {
         self.photos.len() as f32
     }
@@ -43,75 +51,3 @@ impl ToString for BufferedJob {
         }
     }
 }
-
-#[cfg(test)]
-mod test{
-    use super::*;
-
-    #[test]
-    pub fn test_new() {
-        let no_id = None;
-        let id = Some("id");
-        let no_photos = Vec::new();
-        let mut photos = Vec::new();
-        photos.push("photo1.jpeg");
-        photos.push("photo2.jpeg");
-        photos.push("photo3.jpeg");
-        let input_id = 1;
-
-        // no id, no photos
-        let buffered_job = BufferedJob::new(&no_id, &no_photos, &input_id, SystemTime::now());
-        assert_eq!(None, buffered_job.id);
-        assert_eq!(0, buffered_job.photos.len());
-        assert_eq!(1, buffered_job.submission_id);
-        // id, no photos
-        let buffered_job = BufferedJob::new(&id, &no_photos, &input_id, SystemTime::now());
-        assert_eq!(Some("id".to_string()), buffered_job.id);
-        assert_eq!(0, buffered_job.photos.len());
-        assert_eq!(1, buffered_job.submission_id);
-        // no id, photos
-        let buffered_job = BufferedJob::new(&no_id, &photos, &input_id, SystemTime::now());
-        assert_eq!(None, buffered_job.id);
-        assert_eq!(3, buffered_job.photos.len());
-        assert_eq!(1, buffered_job.submission_id);
-        // id, photos
-        let buffered_job = BufferedJob::new(&id, &photos, &input_id, SystemTime::now());
-        assert_eq!(Some("id".to_string()), buffered_job.id);
-        assert_eq!(3, buffered_job.photos.len());
-        assert_eq!(1, buffered_job.submission_id);
-    }
-
-    #[test]
-    pub fn test_to_string(){
-        let no_id = None;
-        let id = Some("id");
-        let no_photos = Vec::new();
-        let mut photos = Vec::new();
-        photos.push("photo1.jpeg");
-        photos.push("photo2.jpeg");
-        photos.push("photo3.jpeg");
-        let input_id = 1;
-
-        // no id, no photos
-        let buffered_job = BufferedJob::new(&no_id, &no_photos, &input_id, SystemTime::now());
-        let datetime: DateTime<Utc> = buffered_job.submission_date.into();
-        let formatted_buffered_time = format!("{}", datetime.format("%d/%m/%Y %T"));
-        assert_eq!(format!("BufferedJob(id: None, #photos: 0, submission_id: 1, buffered_time: {})", formatted_buffered_time).to_string(), buffered_job.to_string());
-        // id, no photos
-        let buffered_job = BufferedJob::new(&id, &no_photos, &input_id, SystemTime::now());
-        let datetime: DateTime<Utc> = buffered_job.submission_date.into();
-        let formatted_buffered_time = format!("{}", datetime.format("%d/%m/%Y %T"));
-        assert_eq!(format!("BufferedJob(id: id, #photos: 0, submission_id: 1, buffered_time: {})", formatted_buffered_time).to_string(), buffered_job.to_string());
-        // no id, photos
-        let buffered_job = BufferedJob::new(&no_id, &photos, &input_id, SystemTime::now());
-        let datetime: DateTime<Utc> = buffered_job.submission_date.into();
-        let formatted_buffered_time = format!("{}", datetime.format("%d/%m/%Y %T"));
-        assert_eq!(format!("BufferedJob(id: None, #photos: 3, submission_id: 1, buffered_time: {})", formatted_buffered_time).to_string(), buffered_job.to_string());
-        // id, photos
-        let buffered_job = BufferedJob::new(&id, &photos, &input_id, SystemTime::now());
-        let datetime: DateTime<Utc> = buffered_job.submission_date.into();
-        let formatted_buffered_time = format!("{}", datetime.format("%d/%m/%Y %T"));
-        assert_eq!(format!("BufferedJob(id: id, #photos: 3, submission_id: 1, buffered_time: {})", formatted_buffered_time).to_string(), buffered_job.to_string());
-    }
-}
-

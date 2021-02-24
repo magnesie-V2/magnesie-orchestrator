@@ -16,7 +16,6 @@ impl From<String> for ClusterError {
     }
 }
 
-/// Implementing the Display trait to make the error printable
 impl std::fmt::Display for ClusterError{
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {

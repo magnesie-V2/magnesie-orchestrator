@@ -5,18 +5,21 @@ use serde::Serialize;
 
 use super::{Service, ServicesKeeper, ServiceError};
 
+/// Request body of a result to send to the ResultStorageService
 #[derive(Serialize, Debug)]
 struct ResultRequestBody {
     pub submission_id: i32,
     pub result_url: String,
 }
 
+/// HTTP client for the ResultStorageService
 pub struct ResultStorageService {
     services_keeper: Arc<RwLock<ServicesKeeper>>,
     client: Client, // it's best to create a client and reuse it for request pooling
 }
 
 impl ResultStorageService {
+    /// Creates a ResultStorageService struct
     pub fn new(services_keeper: Arc<RwLock<ServicesKeeper>>) -> Result<ResultStorageService, ServiceError>{
         Ok(ResultStorageService {
             services_keeper,
@@ -24,6 +27,7 @@ impl ResultStorageService {
         })
     }
 
+    /// Sends a result url to the result storage service
     pub fn post_result(&self, id: &i32, result_url: &str) -> Result<(), ServiceError> {
         let access_information = self.get_access_information()?;
 

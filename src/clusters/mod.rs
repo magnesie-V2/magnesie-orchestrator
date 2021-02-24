@@ -1,3 +1,5 @@
+//! Contains the clusters manager as well as all the clusters implementations
+
 pub mod clusters_manager;
 pub use clusters_manager::*;
 

@@ -1,3 +1,4 @@
+//! Magnes.ie project
 mod services;
 mod jobs_buffer;
 mod orchestrator;
@@ -16,6 +17,7 @@ use std::env;
 use chrono::{DateTime, Utc};
 use crate::services::ResultStorageService;
 
+/// Instantiates the various components and starts the Orchestrator
 fn main() -> Result<(), String>{
 
     let args: Vec<String> = env::args().collect();
@@ -74,12 +76,14 @@ fn main() -> Result<(), String>{
     Ok(())
 }
 
+/// Add clusters to the clusters manager
 fn add_clusters(clusters_manager: &Arc<RwLock<ClustersManager>>){
 
     let mut cm_writer = clusters_manager.write().unwrap();
     cm_writer.add_cluster(Box::new(LocalPhotogrammetry::new()));
 }
 
+/// Adds a g5k cluster to the clusters manager
 fn add_grid5000_cluster(clusters_manager: &Arc<RwLock<ClustersManager>>, username : &str, password : &str, site : &str, walltime : &str){
 
     let mut cm_writer = clusters_manager.write().unwrap();
@@ -92,6 +96,16 @@ fn add_grid5000_cluster(clusters_manager: &Arc<RwLock<ClustersManager>>, usernam
     cm_writer.add_cluster(Box::new(grid5000_cluster));
 }
 
+/// Print a message to the standard output
+///
+/// Example:
+/// ```
+/// log("MyComponent", "Hello there!");
+/// ```
+/// Result:
+/// ```
+/// [22/02/2021 18:40:03][MyComponent] Hello there!
+/// ```
 pub fn log(component: &str, message: &str){
     let system_time = SystemTime::now();
     let datetime: DateTime<Utc> = system_time.into();
@@ -100,6 +114,16 @@ pub fn log(component: &str, message: &str){
     println!("[{}][{}] {}", formatted_datetime, component, message);
 }
 
+/// Print an error to the standard error
+///
+/// Example:
+/// ```
+/// log("MyComponent", "I have a bad feeling about this...");
+/// ```
+/// Result:
+/// ```
+/// [22/02/2021 18:40:03][MyComponent] I have a bad feeling about this...
+/// ```
 pub fn log_error(message: &str) {
     let system_time = SystemTime::now();
     let datetime: DateTime<Utc> = system_time.into();

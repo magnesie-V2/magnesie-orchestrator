@@ -7,7 +7,7 @@ use super::grid5000_struct::*;
 use crate::ssh_client::SshClient;
 use crate::meteo_service::MeteoClient;
 
-use crate::clusters::{Cluster, ClusterError, ReservationStatus};
+use crate::clusters::{ClusterFeatures, ClusterError, ReservationStatus};
 use crate::services::ServiceAccessInformation;
 
 #[allow(unused_imports)]
@@ -282,7 +282,7 @@ impl Grid5000 {
     }
 }
 
-impl Cluster for Grid5000 {
+impl ClusterFeatures for Grid5000 {
 
     /// Deploys the photogrammetry service on a Grid5000 node using a ssh client.
     fn deploy_photogrammetry_service(&mut self) -> Result<ServiceAccessInformation, ClusterError> {

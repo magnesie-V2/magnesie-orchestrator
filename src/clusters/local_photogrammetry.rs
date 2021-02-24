@@ -1,11 +1,13 @@
-use crate::clusters::{Cluster, ClusterError, ReservationStatus};
+use crate::clusters::{ClusterError, ReservationStatus, ClusterFeatures};
 use crate::services::ServiceAccessInformation;
 
+/// This represents a "fake" cluster, in a context where the photogrammetry service is already running on localhost
 pub struct LocalPhotogrammetry{
     reservation_status: Option<ReservationStatus>,
 }
 
 impl LocalPhotogrammetry{
+    /// Creates a LocalPhotogrammetry struct
     pub fn new() -> LocalPhotogrammetry{
         LocalPhotogrammetry {
             reservation_status: None
@@ -13,7 +15,7 @@ impl LocalPhotogrammetry{
     }
 }
 
-impl Cluster for LocalPhotogrammetry{
+impl ClusterFeatures for LocalPhotogrammetry{
     fn deploy_photogrammetry_service(&mut self) -> Result<ServiceAccessInformation, ClusterError> {
         self.reservation_status = Some(ReservationStatus::ResourcesAvailable);
         Ok(self.get_access_information().unwrap())

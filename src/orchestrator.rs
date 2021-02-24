@@ -14,21 +14,21 @@ const ENERGY_COST_PER_COMPLEXITY_UNIT: f32 = 1f32;
 
 /// The brain of the application. Its purpose is to orchestrate all the microservices while following energetic requirements
 pub struct Orchestrator{
-    /// Delay in seconds between iterations of the orchestrator main loop (cf Orchestrator::start())<br>
+    /// Delay in seconds between iterations of the orchestrator main loop (cf Orchestrator::start())
     ticks_delay: u64,
-    /// Delay in seconds before forcing jobs processing without waiting for green energy<br>
+    /// Delay in seconds before forcing jobs processing without waiting for green energy
     green_energy_timeout: u64,
-    /// Keeps information to access microservices (hostname, port, username, password)<br>
+    /// Keeps information to access microservices (hostname, port, username, password)
     services_keeper: Arc<RwLock<ServicesKeeper>>,
-    /// Keeps the list of ongoing submissions and jobs. Note: a job is a submission that has been sent to the photogrammetry service<br>
+    /// Keeps the list of ongoing submissions and jobs. Note: a job is a submission that has been sent to the photogrammetry service
     jobs_buffer: Arc<RwLock<JobsBuffer>>,
-    /// Keeps the list of clusters where the photogrammetry service can be deployed in<br>
+    /// Keeps the list of clusters where the photogrammetry service can be deployed in
     clusters_manager: Arc<RwLock<ClustersManager>>,
-    /// Client for the images storage service, which stores the images of end users submissions<br>
+    /// Client for the images storage service, which stores the images of end users submissions
     image_storage: Arc<ImageStorageService>,
-    /// Client for the photogrammetry microservice<br>
+    /// Client for the photogrammetry microservice
     photogrammetry: Arc<PhotogrammetryService>,
-    /// Client for the results storage microservice, which stores the result of photogrammetry calculations<br>
+    /// Client for the results storage microservice, which stores the result of photogrammetry calculations
     result_storage: Arc<ResultStorageService>
 }
 
@@ -44,7 +44,8 @@ impl Orchestrator {
         }
     }
 
-    /// Starts the orchestrator main loop<br>
+    /// Starts the orchestrator main loop
+    ///
     /// It uses an Arc<Orchestrator> as it must be able to call the Orchestrator::start_web_server() function
     pub fn start(orchestrator: Arc<Orchestrator>){
         log("Orchestrator", "Starting up");
@@ -60,7 +61,7 @@ impl Orchestrator {
             let mut buffer = orchestrator.jobs_buffer.write().unwrap();
 
             if buffer.has_buffered_jobs() {
-                if let Some(jobs) = buffer.get_pending_jobs(){
+                if let Some(jobs) = buffer.get_pending_submissions(){
                     let mut jobs = jobs;
 
                     log("Orchestrator", "Selecting cluster");
@@ -112,7 +113,8 @@ impl Orchestrator {
         }
     }
 
-    /// Starts a web service that listens to the 7878 port to make the orchestrator abe to handle pings from other microservices<br>
+    /// Starts a web service that listens to the 7878 port to make the orchestrator abe to handle pings from other microservices
+    ///
     /// It uses an Arc<Orchestrator> to allow using the orchestrator in different threads, which is necessary to handle TCP connections
     fn start_web_server(orchestrator: Arc<Orchestrator>){
         let o_clone = orchestrator.clone();
@@ -162,7 +164,7 @@ impl Orchestrator {
             if let false = buffer.submission_exists(&job) {
                 log("JobsBuffer", &format!("Adding job {}", job.to_string()));
 
-                if let Err(er) = buffer.add_job(job) {
+                if let Err(er) = buffer.add_job_or_submission(job) {
                     log_error(&er.to_string());
                 }
             }
@@ -190,7 +192,7 @@ impl Orchestrator {
         for job in jobs.iter_mut() {
             let job_complexity = job.get_complexity();
 
-            if available_energy <= 0.001f32 && (total_complexity + job_complexity) * ENERGY_COST_PER_COMPLEXITY_UNIT < available_energy {
+            if available_energy > 0.001f32 && (total_complexity + job_complexity) * ENERGY_COST_PER_COMPLEXITY_UNIT < available_energy {
                 total_complexity += job_complexity;
                 jobs_to_run.push(&mut(**job));
             } else if let Ok(time_pending) = SystemTime::now().duration_since(job.submission_date) {
@@ -302,12 +304,11 @@ impl Orchestrator {
         Ok(())
     }
 
-    /// Reacts to a ping from the photogrammetry microservice when a job is done : <br>
-    /// <ul>
-    /// <li>Sends the result url to the result storage microservice</li>
-    /// <li>Sets the status of the submission to 'Done' in the image storage service</li>
-    /// <li>Removes the submission from the buffer</li>
-    /// </ul>
+    /// Reacts to a ping from the photogrammetry microservice when a job is done :
+    ///
+    /// - Sends the result url to the result storage microservice
+    /// - Sets the status of the submission to 'Done' in the image storage service
+    /// - Removes the submission from the buffer
     fn photogrammetry_callback(&self, id: &str) -> Result<(), ServiceError>{
         let result_url = self.photogrammetry.get_job_result_url(id);
         match result_url {

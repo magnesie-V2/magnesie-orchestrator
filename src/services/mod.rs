@@ -1,3 +1,5 @@
+//! Contains clients for all the microservices and the ServiceKeeper, which keeps track of where the microservices are
+
 pub mod service;
 pub use service::*;
 

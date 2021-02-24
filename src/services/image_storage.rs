@@ -6,6 +6,7 @@ use serde::Serialize;
 
 use super::{Service, ServicesKeeper, ServiceError};
 
+/// Represents a submission from the ImageStorageService
 #[derive(Deserialize, Debug)]
 pub struct Submission {
     pub id: i32,
@@ -13,18 +14,23 @@ pub struct Submission {
     pub submission_date: String,
 }
 
+/// Represents a request body to edit a submission in the ImageStorageService
 #[derive(Serialize, Debug)]
 struct SubmissionUpdateRequestBody {
     pub id: i32,
     pub status: String,
 }
 
+/// HTTP client to the image storage microservice
 pub struct ImageStorageService {
+    /// Keeps track of all services access information, necessary to create http requests
     services_keeper: Arc<RwLock<ServicesKeeper>>,
     client: Client, // it's best to create a client and reuse it for request pooling
 }
 
+
 impl ImageStorageService {
+    /// Creates a ImageStorageService struct
     pub fn new(services_keeper: Arc<RwLock<ServicesKeeper>>) -> Result<ImageStorageService, ServiceError>{
         Ok(ImageStorageService {
             services_keeper,
@@ -32,6 +38,7 @@ impl ImageStorageService {
         })
     }
 
+    /// Returns new submissions currently stored in the ImageStorageService
     pub fn get_new_submissions(&self) -> Result<Vec<Submission>, ServiceError> {
         let access_information = self.get_access_information()?;
 
@@ -49,6 +56,7 @@ impl ImageStorageService {
         Ok(response_body)
     }
 
+    /// Updates the status of a submission in the ImageStorageService
     pub fn change_submission_status(&self, id: &i32, status: &str) -> Result<(), ServiceError> {
         let access_information = self.get_access_information()?;
 

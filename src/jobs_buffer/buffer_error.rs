@@ -1,4 +1,4 @@
-/// This enum represents every type of error that a cluster can throw
+/// This enum represents every type of error that a buffer can throw
 pub enum BufferError{
     /// Basic error containing only a string
     BasicError(String),
@@ -16,7 +16,6 @@ impl From<String> for BufferError {
     }
 }
 
-/// Implementing the Display trait to make the error printable
 impl std::fmt::Display for BufferError{
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
