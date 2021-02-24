@@ -17,6 +17,8 @@
 The service listens to the 7878 TCP and handles the following endpoints : 
 - [GET] /photogrammetry/<job-id>
 
+**For this branch, you need a photogrammetry service on the same machine as the orchestrator on the port 7879 !**
+
 ## Test with mocked services
 The orchestrator can run with mocked photogrammetry, image db and result db services. See the [mocks](https://github.com/magnesie/mocks) repository to learn how to deploy those mocks.
 

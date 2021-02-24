@@ -66,7 +66,7 @@ fn main() -> Result<(), String>{
     services_keeper.write().unwrap().register_service("result storage", output_access_info);
 
     let orchestrator = Orchestrator::new(
-        10,
+        600,
         0, // set to 0 to avoid blocking the jos workflow for nothing until Cluster.get_green_energy_produced() is implemented for a cluster
         services_keeper.clone(),
         jobs_buffer.clone(),
