@@ -41,7 +41,7 @@ pub fn get_energy_used() -> f32 {
 
 pub fn get_energy_produced() -> f32 {
     unsafe{
-        let t = CURRENT_TIME_IN_SECONDS / 3600;
+        let t = (CURRENT_TIME_IN_SECONDS as f32) / (3600 as f32);
 
         let a = 0.3465; // max energy
         let b = 12f32; // offset
