@@ -62,7 +62,7 @@ fn main() -> Result<(), String>{
 
     let orchestrator = Orchestrator::new(
         10,
-        300, // set to 0 to avoid blocking the jos workflow for nothing until Cluster.get_green_energy_produced() is implemented for a cluster
+        0, // set to 0 to avoid blocking the jos workflow for nothing until Cluster.get_green_energy_produced() is implemented for a cluster
         services_keeper.clone(),
         jobs_buffer.clone(),
         clusters_manager.clone(),
@@ -77,7 +77,7 @@ fn main() -> Result<(), String>{
 fn add_clusters(clusters_manager: &Arc<RwLock<ClustersManager>>){
 
     let mut cm_writer = clusters_manager.write().unwrap();
-    cm_writer.add_cluster(Box::new(LocalPhotogrammetry));
+    cm_writer.add_cluster(Box::new(LocalPhotogrammetry::new()));
 }
 
 fn add_grid5000_cluster(clusters_manager: &Arc<RwLock<ClustersManager>>, username : &str, password : &str, site : &str, walltime : &str){

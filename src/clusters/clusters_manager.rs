@@ -24,9 +24,11 @@ impl ClustersManager{
             return None;
         }
 
-        /*let mut selected_cluster = self.clusters.get(0).unwrap(); // unwrap safe as we know there is at least one cluster
+        // TODO
+        // let selected_cluster = self.clusters.get_mut(0).unwrap(); // unwrap safe as we know there is at least one cluster
 
-        for cluster in self.clusters.iter(){
+        /*
+        for cluster in self.clusters.iter_mut(){
             let cluster_energy = cluster.get_green_energy_produced();
             if cluster_energy.is_none() {
                 continue;
@@ -47,44 +49,3 @@ impl ClustersManager{
     }
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    struct TestCluster;
-    impl Cluster for TestCluster{
-        fn make_reservation(self) -> String{
-            unimplemented!();
-        }
-    }
-
-    #[test]
-    fn test_add_cluster(){
-        let mut clusters_manager = ClustersManager::new();
-        let test_cluster = TestCluster;
-
-        assert_eq!(0, clusters_manager.clusters.len());
-        clusters_manager.add_cluster(Box::new(test_cluster));
-        assert_eq!(1, clusters_manager.clusters.len());
-    }
-
-    #[test]
-    fn test_has_clusters(){
-        let mut clusters_manager = ClustersManager::new();
-        let test_cluster = TestCluster;
-
-        assert_eq!(false, clusters_manager.has_clusters());
-        clusters_manager.clusters.push(Box::new(test_cluster));
-        assert_eq!(true, clusters_manager.has_clusters());
-    }
-
-    #[test]
-    fn test_select_cluster(){
-        let mut clusters_manager = ClustersManager::new();
-        let test_cluster = TestCluster;
-
-        assert_eq!(true, clusters_manager.select_cluster().is_none());
-        clusters_manager.add_cluster(Box::new(test_cluster));
-        assert_eq!(false, clusters_manager.select_cluster().is_none());
-    }
-}

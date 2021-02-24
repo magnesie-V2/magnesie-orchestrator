@@ -8,7 +8,7 @@ use std::io::{Read, Write};
 
 use crate::services::{ImageStorageService, PhotogrammetryService, ServiceError, ServicesKeeper, Service, ResultStorageService};
 use crate::jobs_buffer::{JobsBuffer, BufferedJob};
-use crate::clusters::{ClustersManager};
+use crate::clusters::{ClustersManager, ReservationStatus, Cluster};
 use crate::{log, log_error};
 
 const COMPLEXITY_CONSTANT: f32 = 1f32; // TODO define
@@ -57,29 +57,51 @@ impl Orchestrator {
                     let mut jobs = jobs;
 
                     log("Orchestrator", "Selecting cluster");
-                    if let Some(selected_cluster) = orchestrator.clusters_manager.write().unwrap().select_cluster() {
+                    let mut clusters_manager = orchestrator.clusters_manager.write().unwrap();
+                    if let Some(selected_cluster) = clusters_manager.select_cluster() {
+                        log("Orchestrator", "Selecting jobs to run");
+                        let energy = selected_cluster.get_green_energy_produced();
+                        let jobs_to_run = orchestrator.select_jobs_to_run(&mut jobs, &energy);
 
-                        log("Orchestrator", "Deploying photogrammetry service");
-                        if let Ok(sai) =  selected_cluster.deploy_photogrammetry_service() {
-                            {
-                                let mut sk = orchestrator.services_keeper.write().unwrap();
-                                sk.register_service(&orchestrator.photogrammetry.get_name(), sai);
-                            }
+                        if jobs_to_run.is_some(){
+                            let reservation_status = selected_cluster.get_reservation_status();
 
-                            let energy = selected_cluster.get_green_energy_produced();
-                            let jobs_to_run= orchestrator.select_jobs_to_run(&mut jobs, &energy);
-                            if jobs_to_run.is_some(){
-                                if let Err(_) = orchestrator.run_jobs(&mut jobs_to_run.unwrap()){
+                            if reservation_status.is_none() {
+                                Orchestrator::deploy_photogrammetry_service(&orchestrator, selected_cluster)
+                            } else {
+                                let reservation_status = reservation_status.unwrap();
 
+                                match reservation_status{
+                                    ReservationStatus::ResourcesAvailable => {
+                                        if let Err(_) = orchestrator.run_jobs(&mut jobs_to_run.unwrap()){
+
+                                        }
+                                    }
+                                    ReservationStatus::Pending => {
+                                        log("Orchestrator", "Waiting for the photogrammetry service");
+                                    }
+                                    ReservationStatus::Expired => {
+                                        Orchestrator::deploy_photogrammetry_service(&orchestrator, selected_cluster)
+                                    }
                                 }
                             }
-
                         }
                     }
                 }
             }
+            buffer.check_timeouts();
             drop(buffer);
             thread::sleep(time::Duration::from_secs(orchestrator.ticks_delay.clone()));
+        }
+    }
+
+    fn deploy_photogrammetry_service(orchestrator: &Arc<Orchestrator>, selected_cluster: &mut Box<dyn Cluster + Send + Sync>) {
+        log("Orchestrator", "Deploying photogrammetry service");
+        if let Ok(sai) = selected_cluster.deploy_photogrammetry_service() {
+            {
+                let mut sk = orchestrator.services_keeper.write().unwrap();
+                sk.register_service(&orchestrator.photogrammetry.get_name(), sai);
+            }
         }
     }
 
@@ -150,7 +172,6 @@ impl Orchestrator {
 
     // Todo : choose jobs based on complexity (job.get_complexity()) and available energy
     fn select_jobs_to_run<'a>(&self, jobs: &'a mut[&'a mut BufferedJob], available_energy: &'a Option<f32>) -> Option<Vec<&'a mut BufferedJob>> {
-        log("Orchestrator", "Selecting jobs to run");
         let mut jobs_to_run = Vec::new();
         let mut total_complexity = 0f32;
 
