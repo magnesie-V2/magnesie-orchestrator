@@ -3,10 +3,10 @@ pub static mut SIMULATION_STARTED: bool = false;
 
 pub static SHORT_JOB_PHOTOS_COUNT: i32 = 10;
 pub static LONG_JOB_PHOTOS_COUNT: i32 = 30;
-pub static SIMULATION_1_SHORTS_COUNT: i32 = 600;
-pub static SIMULATION_2_LONGS_COUNT: i32 = 200;
-pub static SIMULATION_3_SHORTS_COUNT: i32 = 300;
-pub static SIMULATION_3_LONGS_COUNT: i32 = 100;
+pub static SIMULATION_1_SHORTS_COUNT: i32 = 450;
+pub static SIMULATION_2_LONGS_COUNT: i32 = 150;
+pub static SIMULATION_3_SHORTS_COUNT: i32 = 225;
+pub static SIMULATION_3_LONGS_COUNT: i32 = 75;
 
 pub static NODES_COUNT: usize = 48;
 pub static NODE_ENERGY_USAGE: f32 = 0.0183;
