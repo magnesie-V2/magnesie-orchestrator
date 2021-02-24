@@ -26,7 +26,7 @@ Once the mocks are deployed, execute the following command :
 cargo run
 ```
 
-The orchestrator will start runing and dispatching the submissions created by the image db mock to the mocked photogrammetry service, which will then return fake addresses of falsely generated 3D models. The orchestrator will then send theses addresses to the mocked result database in order to simulate a download of the model.
+The orchestrator will start running and dispatching the submissions created by the image db mock to the mocked photogrammetry service, which will then return fake addresses of falsely generated 3D models. The orchestrator will then send theses addresses to the mocked result database in order to simulate a download of the model.
 
 ## Configuration for Grid5000
 
