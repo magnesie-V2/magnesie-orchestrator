@@ -1,7 +1,8 @@
+/// This type allows using trait objects while keeping the ClustersManager readable
 use super::Cluster;
 
 pub struct ClustersManager{
-    clusters: Vec<Box<dyn Cluster + Send + Sync>>
+    clusters: Vec<Cluster>
 }
 
 impl ClustersManager{
@@ -11,7 +12,7 @@ impl ClustersManager{
         }
     }
 
-    pub fn add_cluster(&mut self, cluster: Box<dyn Cluster + Send + Sync>) {
+    pub fn add_cluster(&mut self, cluster: Cluster) {
         self.clusters.push(cluster);
     }
 
@@ -19,31 +20,10 @@ impl ClustersManager{
         self.clusters.len() > 0
     }
 
-    pub fn select_cluster(&mut self) -> Option<&mut Box<dyn Cluster + Send + Sync>> {
+    pub fn select_cluster(&mut self) -> Option<&mut Cluster> {
         if !self.has_clusters() {
             return None;
         }
-
-        // TODO
-        // let selected_cluster = self.clusters.get_mut(0).unwrap(); // unwrap safe as we know there is at least one cluster
-
-        /*
-        for cluster in self.clusters.iter_mut(){
-            let cluster_energy = cluster.get_green_energy_produced();
-            if cluster_energy.is_none() {
-                continue;
-            }
-
-            let selected_cluster_energy = selected_cluster.get_green_energy_produced();
-            if selected_cluster_energy.is_none() {
-                selected_cluster = cluster;
-                continue;
-            }
-
-            if cluster_energy.unwrap() > selected_cluster_energy.unwrap(){
-                selected_cluster = cluster;
-            }
-        }*/
 
         Some(self.clusters.get_mut(0).unwrap())
     }

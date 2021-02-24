@@ -1,7 +1,9 @@
 use crate::services::ServiceAccessInformation;
 use crate::clusters::cluster_error::ClusterError;
 
-pub trait Cluster {
+pub type Cluster = Box<dyn ClusterFeatures + Send + Sync>;
+
+pub trait ClusterFeatures {
     fn get_green_energy_produced(&self) -> Option<f32> {
         None 
     }
