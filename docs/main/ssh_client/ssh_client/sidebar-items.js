@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["SshClient","Representation of a SSH client with required information to initiate the connection"]]});

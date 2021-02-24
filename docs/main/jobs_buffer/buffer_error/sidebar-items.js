@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["BufferError","This enum represents every type of error that a buffer can throw"]]});

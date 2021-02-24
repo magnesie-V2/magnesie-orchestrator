@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["PhotogrammetryJob","Represents a job created by the PhotogrammetryService"],["PhotogrammetryJobRequestBody","Represents a request body to start a job in the PhotogrammetryService"],["PhotogrammetryService","HTTP client for the photogrammetry microservice"]]});

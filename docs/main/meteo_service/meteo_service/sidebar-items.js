@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["GRID5000_SITES_FILE_PATH",""],["OPEN_WEATHER_MAP_CONF_FILE",""]],"fn":[["read_api_key_from_file","Read the OpenWeatherMap api key from config/open_weather_map.json"]],"struct":[["MeteoClient","Struct to hold the api adress and API for OpenWeatherMap. The API key is read from the config/open_weather_map.json file."]]});

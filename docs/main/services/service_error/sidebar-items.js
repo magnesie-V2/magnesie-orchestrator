@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["ServiceError","This enum represents every type of error that a service can throw"]]});

@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["JobSubmitResponse","Representation of a job reservation response"]]});

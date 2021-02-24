@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Grid5000","Representation of a Grid5000 job reservation"]]});

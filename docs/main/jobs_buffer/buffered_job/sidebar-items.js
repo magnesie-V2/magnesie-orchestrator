@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["BufferedJob","Represents a job in the orchestrator's buffer"]]});

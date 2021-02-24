@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["ReservationStatus","Defines the possible statuses of a cluster resources reservation"]],"trait":[["ClusterFeatures","Defines feature shared by all clusters"]],"type":[["Cluster","Custom type that represents a ClusterFeatures trait object"]]});

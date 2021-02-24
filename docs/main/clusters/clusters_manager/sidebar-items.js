@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["ClustersManager","The cluster manager keeps the list of all the available clusters"]]});

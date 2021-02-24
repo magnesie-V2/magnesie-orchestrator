@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["ImageStorageService","HTTP client to the image storage microservice"],["Submission","Represents a submission from the ImageStorageService"],["SubmissionUpdateRequestBody","Represents a request body to edit a submission in the ImageStorageService"]]});

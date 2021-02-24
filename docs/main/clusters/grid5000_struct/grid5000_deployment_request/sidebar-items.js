@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["DeploymentRequest","Representation of an environment deployment request"]]});

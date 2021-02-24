@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["ResultRequestBody","Request body of a result to send to the ResultStorageService"],["ResultStorageService","HTTP client for the ResultStorageService"]]});

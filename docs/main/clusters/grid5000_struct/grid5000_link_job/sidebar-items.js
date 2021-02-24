@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["LinkJob","Representation of a Link"]]});

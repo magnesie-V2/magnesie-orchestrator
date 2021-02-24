@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["ClusterError","This enum represents every type of error that a cluster can throw"]]});

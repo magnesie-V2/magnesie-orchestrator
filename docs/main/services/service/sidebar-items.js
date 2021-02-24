@@ -1,0 +1,1 @@
+initSidebarItems({"trait":[["Service","This trait represents functionalities shared by all services clients"]]});

@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["LocalPhotogrammetry","This represents a \"fake\" cluster, in a context where the photogrammetry service is already running on localhost"]]});

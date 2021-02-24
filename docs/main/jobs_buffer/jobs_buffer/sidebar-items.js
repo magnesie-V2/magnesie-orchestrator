@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["JobsBuffer","Keeps a list of jobs and submissions (which are jobs"]]});
