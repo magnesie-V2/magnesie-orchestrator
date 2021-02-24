@@ -1,5 +1,13 @@
 # magnes-ie-orchestrateur
 
+## Running with cargo
+
+```rust
+cargo run "grid5000_username" "password" "site" "walltime"
+```
+
+With this branch, the orchestrator will deploy a photogrammetry service on a Grid5000 node using the parameters of cargo run.
+
 ## Building with Docker
     docker build -t magnesie-orchestrator .
 
@@ -23,7 +31,7 @@ The orchestrator can run with mocked photogrammetry, image db and result db serv
 Once the mocks are deployed, execute the following command :
 
 ```bash
-cargo run
+cargo run "grid5000_username" "password" "site" "walltime"
 ```
 
 The orchestrator will start running and dispatching the submissions created by the image db mock to the mocked photogrammetry service, which will then return fake addresses of falsely generated 3D models. The orchestrator will then send theses addresses to the mocked result database in order to simulate a download of the model.
