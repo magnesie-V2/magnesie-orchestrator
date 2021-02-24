@@ -4,7 +4,7 @@ use super::grid5000_link_job::LinkJob;
 use serde::{Deserialize};
 
 #[derive(Deserialize, Debug)]
-// Representation of an environment deployment response
+/// Representation of an environment deployment response
 pub struct DeployEnvResponse {
     pub uid: String,
     pub site_uid: String,

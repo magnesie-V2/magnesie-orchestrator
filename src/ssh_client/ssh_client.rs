@@ -6,6 +6,7 @@ use ssh2::Session;
 use std::{io::prelude::*, path::PathBuf};
 use std::net::TcpStream;
 
+/// Representation of a SSH client with required information to initiate the connection
 pub struct SshClient{
     tcp_address : String,
     username : String,
@@ -25,6 +26,7 @@ impl SshClient {
         }
     }
 
+    /// Initiate a SSH connection
     fn initiate_ssh_connection(&self) -> Session {
 
         let tcp = TcpStream::connect(&self.tcp_address).unwrap();
@@ -40,7 +42,7 @@ impl SshClient {
         return sess;
     }
 
-    // Install Docker and git via SSH
+    /// Install Docker via SSH
     #[allow(dead_code)]
     pub fn install_docker(&self) {
 
@@ -109,9 +111,9 @@ impl SshClient {
         println!("{}", err);
     }
 
-    // Run Docker image via SSH
+    /// Pull the mocked photogrammetry service from docker
     #[allow(dead_code)]
-    pub fn pull_photo_docker(&self) {
+    pub fn pull_mock_photo_docker(&self) {
 
         let sess : Session = self.initiate_ssh_connection();
 
@@ -126,7 +128,7 @@ impl SshClient {
         println!("{}", err);
     }
 
-    // Run Docker image via SSH
+    /// Run Docker image via SSH
     #[allow(dead_code)]
     pub fn run_docker(&self) {
 

@@ -4,7 +4,7 @@ use super::grid5000_link_job::LinkJob;
 use serde::{Deserialize};
 
 #[derive(Deserialize, Debug)]
-// Representation of a job reservation response
+/// Representation of a job reservation response
 pub struct JobSubmitResponse {
     pub uid: u32,
     pub user_uid : String,

@@ -2,6 +2,7 @@ use crate::services::ServiceAccessInformation;
 use crate::clusters::cluster_error::ClusterError;
 
 pub trait Cluster {
+    
     fn get_green_energy_produced(&self) -> Option<f32> {
         None 
     }
