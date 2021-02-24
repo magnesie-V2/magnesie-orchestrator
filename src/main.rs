@@ -21,6 +21,7 @@ use simulation::*;
 
 /// If set to true, displays logging in the standard output
 const VERBOSE: bool = false;
+pub const FLOAT_NIL: f32 = 0.0001;
 
 /// Instantiates the various components and starts the Orchestrator
 fn main() -> Result<(), String>{
