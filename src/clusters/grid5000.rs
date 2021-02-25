@@ -320,9 +320,8 @@ impl ClusterFeatures for Grid5000 {
 
     /// Get the status of the reservation
     fn get_reservation_status(&self) -> Option<ReservationStatus> {
-
         if self.uid.is_empty() {
-            return None
+            return None;
         }
         else {
             let job_deployed: JobSubmitResponse = self.get_reservation(self.uid.clone()).unwrap();
@@ -369,6 +368,11 @@ impl ClusterFeatures for Grid5000 {
             None
         }
 
+    }
+
+    /// Returns how much energy a node of this cluster needs to run at full power
+    fn get_node_energy_requirement(&self) -> f32{
+        return 110f32
     }
 
 }

@@ -16,6 +16,10 @@ impl LocalPhotogrammetry{
 }
 
 impl ClusterFeatures for LocalPhotogrammetry{
+    fn get_node_energy_requirement(&self) -> f32 {
+        0f32
+    }
+
     fn deploy_photogrammetry_service(&mut self) -> Result<ServiceAccessInformation, ClusterError> {
         self.reservation_status = Some(ReservationStatus::ResourcesAvailable);
         Ok(self.get_access_information().unwrap())

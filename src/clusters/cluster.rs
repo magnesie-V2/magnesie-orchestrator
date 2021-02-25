@@ -7,12 +7,17 @@ pub type Cluster = Box<dyn ClusterFeatures + Send + Sync>;
 /// Defines feature shared by all clusters
 pub trait ClusterFeatures {
     /// Returns how much energy as been produced since the last iteration of the orchestrator's loop
+    /// TODO: replace Option<f32> by f32 return type
     fn get_green_energy_produced(&self) -> Option<f32> {
         None 
     }
 
     /// Returns how much energy has been consumed since the last iteration of the orchestrator's loop
+    /// TODO: replace Option<f32> by f32 return type
     fn get_current_energy_consumption(&self) -> Option<f32> { None }
+
+    /// Returns how much energy a node of this cluster needs to run at full power
+    fn get_node_energy_requirement(&self) -> f32;
 
     /// Deploys the photogrammetry service on this cluster
     fn deploy_photogrammetry_service(&mut self) -> Result<ServiceAccessInformation, ClusterError>;
