@@ -4,7 +4,7 @@ use std::sync::{Arc, RwLock};
 use std::net::{TcpStream, TcpListener};
 use std::io::{Read, Write};
 
-use crate::services::{ImageStorageService, PhotogrammetryService, ServiceError, ServicesKeeper, Service, ResultStorageService};
+use crate::services::{ImageStorageService, PhotogrammetryService, ServiceError, ServicesKeeper, Service, ResultStorageService, ServiceAccessInformation};
 use crate::jobs_buffer::{JobsBuffer, BufferedJob};
 use crate::clusters::{ClustersManager, ReservationStatus, Cluster};
 use crate::{log, log_error};
@@ -156,9 +156,15 @@ impl Orchestrator {
         log("ImageStorage", &format!("Fetched {}", new_submissions.len()));
 
         let mut buffer = self.jobs_buffer.write().unwrap();
+        let image_storage_ai = self.image_storage.get_access_information().unwrap_or(ServiceAccessInformation::new("localhost", 7880, "", ""));
+        let image_storage_url = image_storage_ai.get_host();
+        let image_storage_port = image_storage_ai.get_port();
+        let base_url = format!("http://{}:{}", image_storage_url, image_storage_port);
 
         for s in new_submissions.into_iter() {
-            let photos: Vec<&str> = s.photos.iter().map(|s| s as &str).collect();
+            let photos: Vec<String> = s.photos.iter().map(|s| base_url.clone()+s).collect();
+            let photos: Vec<&str> = photos.iter().map(|s| s as &str).collect();
+
             let job = BufferedJob::new(&None, &photos, &s.id, SystemTime::now());
 
             if let false = buffer.submission_exists(&job) {
