@@ -17,9 +17,7 @@ pub trait ClusterFeatures {
     fn get_current_energy_consumption(&self) -> Option<f32> { None }
 
     /// Returns how much energy a node of this cluster needs to run at full power
-    fn get_node_energy_requirement(&self) -> f32{
-        0f32
-    }
+    fn get_node_energy_requirement(&self) -> f32;
 
     /// Deploys the photogrammetry service on this cluster
     fn deploy_photogrammetry_service(&mut self) -> Result<ServiceAccessInformation, ClusterError>;
