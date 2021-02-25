@@ -223,7 +223,7 @@ impl Orchestrator {
         for job in jobs.iter_mut(){
 
             log("Photogrammetry", &format!("Creating a job from {} photos", job.photos.len()));
-            let job_id = self.photogrammetry.create_job(&job.photos, "/photogrammetry");
+            let job_id = self.photogrammetry.create_job(&job.photos, "/photogrammetry/<id>");
 
             match job_id{
                 Ok(id) => {
