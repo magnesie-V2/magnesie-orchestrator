@@ -338,6 +338,39 @@ impl ClusterFeatures for Grid5000 {
         }
     }
 
+    /// Returns how much energy as been produced since the last iteration of the orchestrator's loop
+    fn get_green_energy_produced(&self) -> Option<f32> {
+        
+        let meteo_client = MeteoClient::new();
+
+        let (weather, _, sunrise, sunset) = meteo_client.get_weather_for_city(self.site.clone()).unwrap();
+
+        let start = SystemTime::now();
+        let now = start
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards").as_secs();
+
+        if now > sunset || now < sunrise {
+            return None
+        }
+        else if weather == 800 {
+            return Some(0.3465)
+        }
+        else if weather == 801 {
+            return Some(0.259875)
+        }
+        else if weather == 802 {
+            return Some(0.17325)
+        }
+        else if weather == 803 {
+            return Some(0.051975)
+        }
+        else {
+            None
+        }
+
+    }
+
 }
 
 #[test]
