@@ -19,7 +19,7 @@ FROM debian:buster-slim
 ARG APP=/usr/src/app
 
 RUN apt-get update \
-    && apt-get install -y ca-certificates tzdata \
+    && apt-get install -y ca-certificates tzdata netcat \
     && rm -rf /var/lib/apt/lists/*
 
 EXPOSE 7878
@@ -37,6 +37,7 @@ RUN chown -R $APP_USER:$APP_USER ${APP}
 
 USER $APP_USER
 
+COPY wait-for.sh /bin/
+
 WORKDIR ${APP}
-CMD ["./magnesie-orchestrator"]
 

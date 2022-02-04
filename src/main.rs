@@ -45,8 +45,8 @@ fn main() -> Result<(), String>{
     // image storage
     let image_storage_service = ImageStorageService::new(services_keeper.clone())?;
     let input_access_info = ServiceAccessInformation::new(
-        "localhost",
-        7880,
+        &env::var("IMAGE_STORAGE_WS_HOST").unwrap(),
+        env::var("IMAGE_STORAGE_WS_PORT").unwrap().parse::<u16>().unwrap(),
         "",
         "",
     );
@@ -58,8 +58,8 @@ fn main() -> Result<(), String>{
     // result storage
     let result_storage_service = ResultStorageService::new(services_keeper.clone())?;
     let output_access_info = ServiceAccessInformation::new(
-        "localhost",
-        7881,
+        &env::var("RESULT_STORAGE_WS_HOST").unwrap(),
+        env::var("RESULT_STORAGE_WS_PORT").unwrap().parse::<u16>().unwrap(),
         "",
         "",
     );

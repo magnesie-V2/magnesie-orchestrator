@@ -1,3 +1,4 @@
+use std::env;
 use std::{time, thread};
 use std::time::SystemTime;
 use std::sync::{Arc, RwLock};
@@ -113,14 +114,17 @@ impl Orchestrator {
         }
     }
 
-    /// Starts a web service that listens to the 7878 port to make the orchestrator abe to handle pings from other microservices
+    /// Starts a web service that listens to the configured port to make the orchestrator able to handle pings from other microservices
     ///
     /// It uses an Arc<Orchestrator> to allow using the orchestrator in different threads, which is necessary to handle TCP connections
     fn start_web_server(orchestrator: Arc<Orchestrator>){
         let o_clone = orchestrator.clone();
         thread::spawn(move || -> Result<(), String>{
-            match TcpListener::bind("0.0.0.0:7878"){
+            let orchestrator_host = &env::var("ORCHESTRATOR_WS_PORT").unwrap();
+            let orchestrator_url = format!("0.0.0.0:{}", orchestrator_host);
+            match TcpListener::bind(orchestrator_url.to_string()){
                 Ok(callback_listener) => {
+                    log("Orchestrator", &format!("Web server listening at {}", orchestrator_url));
                     for stream in callback_listener.incoming(){
                         match stream{
                             Ok(s) => {
