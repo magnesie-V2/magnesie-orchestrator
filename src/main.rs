@@ -66,7 +66,7 @@ fn main() -> Result<(), String>{
     services_keeper.write().unwrap().register_service("result storage", output_access_info);
 
     let orchestrator = Orchestrator::new(
-        600,
+        50,
         0, // set to 0 to avoid blocking the jos workflow for nothing until Cluster.get_green_energy_produced() is implemented for a cluster
         services_keeper.clone(),
         jobs_buffer.clone(),
@@ -83,6 +83,8 @@ fn main() -> Result<(), String>{
 fn add_clusters(clusters_manager: &Arc<RwLock<ClustersManager>>){
 
     let mut cm_writer = clusters_manager.write().unwrap();
+
+    log("Orchestrator", "Add LocalPhotogrammetry server to cluster");
     cm_writer.add_cluster(Box::new(LocalPhotogrammetry::new()));
 }
 
@@ -95,7 +97,8 @@ fn add_grid5000_cluster(clusters_manager: &Arc<RwLock<ClustersManager>>, usernam
     String::from(password),
     String::from(site),
     String::from(walltime));
-    
+
+    log("Orchestrator", "Add Grid5000 server to cluster");
     cm_writer.add_cluster(Box::new(grid5000_cluster));
 }
 

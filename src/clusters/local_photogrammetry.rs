@@ -1,3 +1,4 @@
+use std::env;
 use crate::clusters::{ClusterError, ReservationStatus, ClusterFeatures};
 use crate::services::ServiceAccessInformation;
 
@@ -31,8 +32,8 @@ impl ClusterFeatures for LocalPhotogrammetry{
 
     fn get_access_information(&self) -> Option<ServiceAccessInformation> {
         Some(ServiceAccessInformation::new(
-            "localhost",
-            7879,
+            &env::var("PHOTOGRAMMETRY_WS_HOST").unwrap(),
+            env::var("PHOTOGRAMMETRY_WS_PORT").unwrap().parse::<u16>().unwrap(),
             "",
             ""
         ))

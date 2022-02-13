@@ -16,8 +16,9 @@ pub struct PhotogrammetryJob {
 /// Represents a request body to start a job in the PhotogrammetryService
 #[derive(Serialize, Debug)]
 struct PhotogrammetryJobRequestBody{
+    pub submission_id: i32,
     pub photos: Vec<String>,
-    pub callback: String
+    pub callback: String,
 }
 
 /// HTTP client for the photogrammetry microservice
@@ -36,7 +37,7 @@ impl PhotogrammetryService {
     }
 
     /// Sends pictures urls to the photogrammetry microservice and returns the id of the created job
-    pub fn create_job(&self, images_urls: &[String], callback_url: &str) -> Result<String, ServiceError> {
+    pub fn create_job(&self, submission_id: i32, images_urls: &[String], callback_url: &str) -> Result<String, ServiceError> {
         let access_information = self.get_access_information()?;
 
         let request_url = format!("http://{host}:{port}/job",
@@ -44,6 +45,7 @@ impl PhotogrammetryService {
                                   port=access_information.get_port());
 
         let body = PhotogrammetryJobRequestBody {
+            submission_id,
             photos: Vec::from(images_urls),
             callback: String::from(callback_url)
         };
@@ -60,14 +62,15 @@ impl PhotogrammetryService {
         Err(ServiceError::from("The id field wasn't found in the response body"))
     }
 
-    /// Retrieves information about a job based on its id
-    pub fn get_job(&self, id: &str) -> Result<PhotogrammetryJob, ServiceError>{
+    /// Retrieves data about a job based on its id
+    pub fn get_job(&self, data: &str, id: &str) -> Result<PhotogrammetryJob, ServiceError>{
         let access_information = self.get_access_information()?;
 
-        let request_url = format!("http://{host}:{port}/job/{id}",
-                                  host=access_information.get_host(),
-                                  port=access_information.get_port(),
-                                  id=id);
+        let request_url = format!("http://{host}:{port}/job/{data}/{id}",
+                                    host=access_information.get_host(),
+                                    port=access_information.get_port(),
+                                    data=data,
+                                    id=id);
 
         let request = self.client.get(&request_url);
 

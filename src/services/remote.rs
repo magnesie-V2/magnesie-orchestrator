@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use crate::{log};
+
 /// Keeps a map of the micro services access information <br />
 pub struct ServicesKeeper {
     services: HashMap<String, ServiceAccessInformation>,
@@ -17,6 +19,7 @@ impl ServicesKeeper {
 
     /// Adds a service's access information to the map at a specific key
     pub fn register_service(&mut self, service_key: &str, service_access_information: ServiceAccessInformation) {
+        log("Remote", &format!("Add service {} ({}, {})", service_key, service_access_information.host, service_access_information.port));
         self.services.insert(String::from(service_key), service_access_information);
     }
 

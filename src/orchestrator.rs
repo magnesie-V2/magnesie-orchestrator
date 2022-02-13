@@ -227,7 +227,7 @@ impl Orchestrator {
         for job in jobs.iter_mut(){
 
             log("Photogrammetry", &format!("Creating a job from {} photos", job.photos.len()));
-            let job_id = self.photogrammetry.create_job(&job.photos, "/photogrammetry/<id>");
+            let job_id = self.photogrammetry.create_job(job.submission_id, &job.photos, "/photogrammetry/<id>");
 
             match job_id{
                 Ok(id) => {
@@ -274,27 +274,46 @@ impl Orchestrator {
             None => {}
         };
 
+        log("Orchestrator", &format!("Path asked: {}", path));
         let mut path_terms = path.split("/");
-        match path_terms.next() {
-            Some(_) => {},
-            None => println!("Bad request: [{}] {}", method, path),
-        };
+        // domain
         match path_terms.next() {
             Some(_) => {},
             None => println!("Bad request: [{}] {}", method, path),
         };
 
+        // route level 1
+        match path_terms.next() {
+            Some(_) => {},
+            None => println!("Bad request: [{}] {}", method, path),
+        };
+
+        // route level 2 : parameter data
+        let data = String::from(match path_terms.next() {
+            Some(x) => x,
+            None => "undefined",
+        });
+
+        // route level 3 : parameter id
         let mut id = String::from(match path_terms.next() {
             Some(x) => x,
             None => "undefined",
         });
 
-        match self.photogrammetry.get_job(&id){
+        match self.photogrammetry.get_job(&data, &id){
             Ok(_) => {}
             Err(_) => {
                 id = String::from("undefined")
             }
         };
+
+        // let response_body = String::from(match self.photogrammetry.get_job(&data, &id){
+        //     Ok(x) => x,
+        //     Err(_) => {
+        //         id = String::from("undefined");
+        //         "404"
+        //     }
+        // });
 
         if id == "undefined" {
             response_status_line = "HTTP/1.1 404 NOT FOUND\r\n\r\n";

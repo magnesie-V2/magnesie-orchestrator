@@ -35,6 +35,7 @@ impl BufferedJob{
     /// Returns the complexity of this job
     ///
     /// Currently simply returns the number of the photos
+    #[allow(dead_code)]
     pub fn get_complexity(&self) -> f32 {
         self.photos.len() as f32
     }
