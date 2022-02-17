@@ -9,6 +9,7 @@ use super::{Service, ServicesKeeper, ServiceError};
 #[derive(Serialize, Debug)]
 struct ResultRequestBody {
     pub submission_id: i32,
+    pub name: String,
     pub result_url: String,
 }
 
@@ -28,7 +29,7 @@ impl ResultStorageService {
     }
 
     /// Sends a result url to the result storage service
-    pub fn post_result(&self, id: &i32, result_url: &str) -> Result<(), ServiceError> {
+    pub fn post_result(&self, id: &i32, name: &str, result_url: &str) -> Result<(), ServiceError> {
         let access_information = self.get_access_information()?;
 
         let request_url = format!("http://{host}:{port}/result",
@@ -37,6 +38,7 @@ impl ResultStorageService {
 
         let body = ResultRequestBody {
             submission_id: id.clone(),
+            name: name.to_string(),
             result_url: result_url.to_string()
         };
 

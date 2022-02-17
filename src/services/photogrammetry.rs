@@ -63,13 +63,12 @@ impl PhotogrammetryService {
     }
 
     /// Retrieves data about a job based on its id
-    pub fn get_job(&self, data: &str, id: &str) -> Result<PhotogrammetryJob, ServiceError>{
+    pub fn get_job(&self, id: &str) -> Result<PhotogrammetryJob, ServiceError>{
         let access_information = self.get_access_information()?;
 
-        let request_url = format!("http://{host}:{port}/job/{data}/{id}",
+        let request_url = format!("http://{host}:{port}/job/status/{id}",
                                     host=access_information.get_host(),
                                     port=access_information.get_port(),
-                                    data=data,
                                     id=id);
 
         let request = self.client.get(&request_url);

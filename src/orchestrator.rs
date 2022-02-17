@@ -120,8 +120,8 @@ impl Orchestrator {
     fn start_web_server(orchestrator: Arc<Orchestrator>){
         let o_clone = orchestrator.clone();
         thread::spawn(move || -> Result<(), String>{
-            let orchestrator_host = &env::var("ORCHESTRATOR_WS_PORT").unwrap();
-            let orchestrator_url = format!("0.0.0.0:{}", orchestrator_host);
+            let orchestrator_port = &env::var("ORCHESTRATOR_WS_PORT").unwrap();
+            let orchestrator_url = format!("0.0.0.0:{}", orchestrator_port);
             match TcpListener::bind(orchestrator_url.to_string()){
                 Ok(callback_listener) => {
                     log("Orchestrator", &format!("Web server listening at {}", orchestrator_url));
@@ -148,7 +148,7 @@ impl Orchestrator {
 
     /// Fetches the new submissions from the ImageStorageService and adds them to the JobsBuffer if it doesn't have them already
     fn add_submissions_to_buffer(&self) -> Result<(), String>{
-        log("ImageStorage", "Fetching new submissions");
+        // log("ImageStorage", "Fetching new submissions");
         let get_new_submissions_result = self.image_storage.get_new_submissions();
 
         if let Err(er) = get_new_submissions_result {
@@ -157,25 +157,28 @@ impl Orchestrator {
         }
 
         let new_submissions = get_new_submissions_result.ok().unwrap();
-        log("ImageStorage", &format!("Fetched {}", new_submissions.len()));
 
-        let mut buffer = self.jobs_buffer.write().unwrap();
-        let image_storage_ai = self.image_storage.get_access_information().unwrap_or(ServiceAccessInformation::new("localhost", 7880, "", ""));
-        let image_storage_url = image_storage_ai.get_host();
-        let image_storage_port = image_storage_ai.get_port();
-        let base_url = format!("http://{}:{}", image_storage_url, image_storage_port);
+        if new_submissions.len() > 0 {
+            // log("ImageStorage", &format!("Fetched {}", new_submissions.len()));
 
-        for s in new_submissions.into_iter() {
-            let photos: Vec<String> = s.photos.iter().map(|s| base_url.clone()+s).collect();
-            let photos: Vec<&str> = photos.iter().map(|s| s as &str).collect();
+            let mut buffer = self.jobs_buffer.write().unwrap();
+            let image_storage_ai = self.image_storage.get_access_information().unwrap_or(ServiceAccessInformation::new("localhost", 7880, "", ""));
+            let image_storage_url = image_storage_ai.get_host();
+            let image_storage_port = image_storage_ai.get_port();
+            let base_url = format!("http://{}:{}", image_storage_url, image_storage_port);
 
-            let job = BufferedJob::new(&None, &photos, &s.id, SystemTime::now());
+            for s in new_submissions.into_iter() {
+                let photos: Vec<String> = s.photos.iter().map(|s| base_url.clone()+s).collect();
+                let photos: Vec<&str> = photos.iter().map(|s| s as &str).collect();
 
-            if let false = buffer.submission_exists(&job) {
-                log("JobsBuffer", &format!("Adding job {}", job.to_string()));
+                let job = BufferedJob::new(&None, s.name, &photos, &s.id, SystemTime::now());
 
-                if let Err(er) = buffer.add_job_or_submission(job) {
-                    log_error(&er.to_string());
+                if let false = buffer.submission_exists(&job) {
+                    log("JobsBuffer", &format!("Adding job {}", job.to_string()));
+
+                    if let Err(er) = buffer.add_job_or_submission(job) {
+                        log_error(&er.to_string());
+                    }
                 }
             }
         }
@@ -227,7 +230,12 @@ impl Orchestrator {
         for job in jobs.iter_mut(){
 
             log("Photogrammetry", &format!("Creating a job from {} photos", job.photos.len()));
-            let job_id = self.photogrammetry.create_job(job.submission_id, &job.photos, "/photogrammetry/<id>");
+            let orchestrator_port = &env::var("ORCHESTRATOR_WS_PORT").unwrap();
+            let job_id = self.photogrammetry.create_job(
+                job.submission_id,
+                &job.photos,
+                &format!("http://{}:{}/photogrammetry/<id>", "orchestrator", orchestrator_port)
+            );
 
             match job_id{
                 Ok(id) => {
@@ -288,19 +296,13 @@ impl Orchestrator {
             None => println!("Bad request: [{}] {}", method, path),
         };
 
-        // route level 2 : parameter data
-        let data = String::from(match path_terms.next() {
-            Some(x) => x,
-            None => "undefined",
-        });
-
-        // route level 3 : parameter id
+        // route level 2 : parameter id
         let mut id = String::from(match path_terms.next() {
             Some(x) => x,
             None => "undefined",
         });
 
-        match self.photogrammetry.get_job(&data, &id){
+        match self.photogrammetry.get_job(&id){
             Ok(_) => {}
             Err(_) => {
                 id = String::from("undefined")
@@ -350,7 +352,7 @@ impl Orchestrator {
                 let mut buffer = self.jobs_buffer.write().unwrap();
                 if let Some(job) = buffer.get_job_by_id(id){
                     log("ResultStorage", &format!("Getting result of submission {}", job.submission_id));
-                    if let Err(_) = self.result_storage.post_result(&job.submission_id, &result_url){
+                    if let Err(_) = self.result_storage.post_result(&job.submission_id, &job.name, &result_url){
 
                     }
 

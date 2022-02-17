@@ -10,6 +10,7 @@ use super::{Service, ServicesKeeper, ServiceError};
 #[derive(Deserialize, Debug)]
 pub struct Submission {
     pub id: i32,
+    pub name: String,
     pub photos: Vec<String>,
     pub submission_date: String,
 }

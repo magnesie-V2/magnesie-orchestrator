@@ -6,6 +6,8 @@ use chrono::DateTime;
 pub struct BufferedJob{
     /// The job's id. It's None by default but can be set to Some(String) to indicate it's currently being processed
     pub id: Option<String>,
+    /// Job name
+    pub name: String,
     /// The list of photos of the submission
     pub photos: Vec<String>,
     /// The id of the original submission
@@ -16,7 +18,7 @@ pub struct BufferedJob{
 
 impl BufferedJob{
     /// Creates a BufferedJob struct
-    pub fn new(id: &Option<&str>, photos: &[&str], submission_id: &i32, submission_date: SystemTime) -> BufferedJob {
+    pub fn new(id: &Option<&str>, name: String,  photos: &[&str], submission_id: &i32, submission_date: SystemTime) -> BufferedJob {
         let id = match id {
             None => None,
             Some(id) => Some(id.to_string())
@@ -26,6 +28,7 @@ impl BufferedJob{
 
         BufferedJob {
             id,
+            name,
             photos,
             submission_id: submission_id.clone(),
             submission_date

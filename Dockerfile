@@ -1,5 +1,5 @@
 # Builder
-FROM rust:1.47.0 as builder
+FROM rust:1.58.1 as builder
 
 RUN USER=root cargo new --bin magnesie-orchestrator
 WORKDIR ./magnesie-orchestrator
